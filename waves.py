@@ -4,8 +4,7 @@ import numpy as np
 from math import pi
 
 def complex_wave(disprel, freq, xs, ts):
-    """Return the displacement of a 1D medium as a complex harmonic wave
-    travels through it.
+    """Return the displacement of a 1D medium due to a 1D complex harmonic wave.
 
     It returns an array of shape (ts.size, xs.size) with `ts` being
     the vector for the time, and `xs` being the positions in a
@@ -13,8 +12,8 @@ def complex_wave(disprel, freq, xs, ts):
 
     The complex harmonic wave is the complex exponential: 
         exp(1j * (k*x - w*t))
-    where `k` is the angular wavenumber, `x` is the
-    position, `w` is the angular frequency and `t` is the time.
+    where `k` is the angular wavenumber, `x` is the position, `w` is
+    the angular frequency and `t` is the time.
 
     `disprel` is the dispersion relationship and it should be a
     function of one argument that takes the linear frequency `freq`
@@ -33,8 +32,7 @@ def complex_wave(disprel, freq, xs, ts):
     return us
 
 def harmonic_wave(disprel, freq, xs, ts):
-    """Return the displacement of a 1D medium as a sinusoidal wave travels
-    through it.
+    """Return the displacement of a 1D medium due to a 1D sinusoidal wave.
 
     It is the result of applyting `f(x) = -numpy.imag(x)` to the
     output of `complex_wave`, which extracts the sinus part of it and
@@ -50,8 +48,7 @@ def harmonic_wave(disprel, freq, xs, ts):
 def wave_packet(disprel, freqs, xs, ts, \
                 normalize = True, \
                 amplitudes = None):
-    """Return the displacement of a 1D medium as a wave packet travels
-    through it.
+    """Return the displacement of a 1D medium due to a 1D wave packet.
 
     It is the result of iterating `complex_wave` over `freqs`, which
     should be a iterable containing the linear frequencies of each
