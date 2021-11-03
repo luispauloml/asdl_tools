@@ -1,4 +1,5 @@
 import numpy as np
+from collections.abc import Iterable
 
 class wavepacket:
     """A class for creating wavepackets in 1D domains."""
@@ -19,21 +20,30 @@ argument.'
             raise TypeError(err)
         self.__disprel = disprel
 
-        # Check the frequency content
-        if freqs is None:
-            self.__freqs = None
-        elif not isinstance(freqs, collections.abc.Iterable):
-            err = '`freqs` should be an iterable, e.g., a list containing the frequency \
-contenct of the wave packet.'
-            raise TypeError(err)
-        else:
-            self.__frequency_content = freqs
-            self.__check_cfl()
+        # Set frequency content
+        self.set_freqs(freqs)
 
         # Discretizing the domain
         self.time = np.arange(0, T, 1/fs)
         self.space = np.arange(0, L, dx)
 
-    def __check_cfl(self):
-        """Check if the parameters meet the CFL condition."""
-        pass
+    def set_freqs(self, freqs):
+        """Set the frequency content of the wavepacket."""
+        if freqs is None:
+            self.__frequency_content = None
+        elif not isinstance(freqs, Iterable):
+            err = '`freqs` should be an iterable, e.g., a list containing the frequency \
+contenct of the wave packet.'
+            raise TypeError(err)
+        else:
+            # Check CFL condition for input parameters 
+            cfl = self.dx / self.dt
+            dr = self.__disprel
+            tests = [b for b in map(lambda f: f/dr(f) > cfl/2, \
+                                    freqs) if b]
+            if not tests == []:
+                err = 'at least of the frequencies provided makes the wave exceed the CFL \
+condition.'
+                raise ValueError(err)
+            else:
+                self.__frequency_content = freqs
