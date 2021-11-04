@@ -5,7 +5,7 @@ from collections.abc import Iterable
 class wavepacket:
     """A class for creating wavepackets in 1D domains."""
 
-    def __init__(self, fs, dx, L, T, disprel, freqs = None):
+    def __init__(self, fs, dx, L, T, disprel, freqs = None, normalize = True):
 
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
@@ -14,6 +14,13 @@ class wavepacket:
         self.__length = L       # Total length of the domain
         self.__period = T       # Total time of travel
         self.__data = None      # Store date
+
+        # Flag for data normalization
+        # Use if statement to garantee that `normalize` becomes bool
+        if normalize:
+            self.__normalize_flag = True
+        else:
+            self.__normalize_flag = False
 
         # Check the dispersion relationship
         if not callable(disprel):
@@ -74,6 +81,10 @@ condition.'
                                                f,
                                                self.space,
                                                self.time)
+
+        # Normalizing
+        if self.__normalize_flag:
+            self.__data = self.__data / np.max(np.abs(self.__data))
 
     def __complex_wave(self, disprel, freq, xs, ts):
         """Return the displacement of a 1D medium due to a 1D complex harmonic wave."""
