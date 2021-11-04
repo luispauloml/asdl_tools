@@ -110,13 +110,12 @@ spectrum of the wave packet.'
 
         return us
 
-    def merge_spectrum(self, wp):
-        """Merge spectrum of a wavepacket into current one."""
+    def merge(self, wp):
+        """Merge spectrum and the dispersion relationships of a wavepacket into current one."""
 
         if not isinstance(wp, wavepacket):
             err = 'the arguments should be `wavepacket` instances.'
             raise TypeError(err)
 
-        # Merging the spectrum
-        for f in wp.__spectrum:
-            self.__spectrum.append(f)
+        self.__spectrum.extend(wp.__spectrum)
+        self.__disprel.extend(wp.__disprel)
