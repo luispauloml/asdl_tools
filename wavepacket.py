@@ -29,20 +29,20 @@ argument.'
             raise TypeError(err)
         self.__disprel = disprel
 
-        # Set frequency content
-        self.set_freqs(freqs)
+        # Set frequency spectrum
+        self.set_spectrum(freqs)
 
         # Discretizing the domain
         self.time = np.arange(0, T, 1/fs)
         self.space = np.arange(0, L, dx)
 
-    def set_freqs(self, freqs):
-        """Set the frequency content of the wavepacket."""
+    def set_spectrum(self, freqs):
+        """Set the frequency spectrum of the wavepacket."""
         if freqs is None:
-            self.__frequency_content = None
+            self.__spectrum = None
         elif not isinstance(freqs, Iterable):
             err = '`freqs` should be an iterable, e.g., a list containing the frequency \
-contenct of the wave packet.'
+spectrum of the wave packet.'
             raise TypeError(err)
         else:
             # Check CFL condition for input parameters 
@@ -55,7 +55,7 @@ contenct of the wave packet.'
 condition.'
                 raise ValueError(err)
             else:
-                self.__frequency_content = freqs
+                self.__spectrum = freqs
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values."""
@@ -76,7 +76,7 @@ condition.'
         """Evaluate the wavepacket."""
 
         self.__data = 0
-        for f in self.__frequency_content:
+        for f in self.__spectrum:
             self.__data += self.__complex_wave(self.__disprel,
                                                f,
                                                self.space,
