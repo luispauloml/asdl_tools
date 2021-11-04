@@ -22,12 +22,8 @@ class wavepacket:
         else:
             self.__normalize_flag = False
 
-        # Check the dispersion relationship
-        if not callable(disprel):
-            err = '`disprel` should be a callable object, e.g., a function of 1 \
-argument.'
-            raise TypeError(err)
-        self.__disprel = disprel
+        # Set dispersion relationship
+        self.set_dispersion(disprel)
 
         # Set frequency spectrum
         self.set_spectrum(freqs)
@@ -35,6 +31,22 @@ argument.'
         # Discretizing the domain
         self.time = np.arange(0, T, 1/fs)
         self.space = np.arange(0, L, dx)
+
+    def set_dispersion(self, disprels):
+        """Set the dispersion relationships of the wavepacket."""
+
+        # Put in a list if it is not a list
+        if not isinstance(disprels, Iterable):
+            disprels = [disprels]
+
+        # Check if elements are collables
+        for d in disprels:
+            if not callable(d):
+                err = '`disprel` should be a callable object, e.g., a function of 1 \
+argument, or a list of such elements.'
+                raise TypeError(err)
+
+        self.__disprel = disprels
 
     def set_spectrum(self, freqs):
         """Set the frequency spectrum of the wavepacket."""
@@ -47,15 +59,15 @@ spectrum of the wave packet.'
         else:
             # Check CFL condition for input parameters 
             cfl = self.dx / self.dt
-            dr = self.__disprel
-            tests = [b for b in map(lambda f: f/dr(f) > cfl,
-                                    freqs) if b]
-            if not tests == []:
-                err = 'at least of the frequencies provided makes the wave exceed the CFL \
-condition.'
-                raise ValueError(err)
-            else:
-                self.__spectrum = freqs
+            
+            for d in self.__disprel:
+                for f in freqs:
+                    if f/d(f) > cfl:
+                        err = 'at least of the frequencies provided makes the wave exceed the CFL\
+ condition.'
+                        raise ValueError(err)
+
+            self.__spectrum = freqs
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values."""
@@ -77,10 +89,9 @@ condition.'
 
         self.__data = 0
         for f in self.__spectrum:
-            self.__data += self.__complex_wave(self.__disprel,
-                                               f,
-                                               self.space,
-                                               self.time)
+            for d in self.__disprel:
+                self.__data += self.__complex_wave(d, f, self.space,
+                                                   self.time)
 
         # Normalizing
         if self.__normalize_flag:
