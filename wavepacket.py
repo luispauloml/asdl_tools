@@ -12,6 +12,7 @@ class wavepacket:
         self.dt = 1/fs          # Time pace
         self.__length = L       # Total length of the domain
         self.__period = T       # Total time of travel
+        self.__data = None      # Store date
 
         # Check the dispersion relationship
         if not callable(disprel):
@@ -47,3 +48,14 @@ condition.'
                 raise ValueError(err)
             else:
                 self.__frequency_content = freqs
+
+    def get_data(self):
+        """Return time history of the wavepacket."""
+
+        if self.__data is None:
+            self.eval()
+
+        return self.__data
+
+    def eval(self):
+        pass
