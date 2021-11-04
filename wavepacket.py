@@ -40,7 +40,7 @@ contenct of the wave packet.'
             # Check CFL condition for input parameters 
             cfl = self.dx / self.dt
             dr = self.__disprel
-            tests = [b for b in map(lambda f: f/dr(f) > cfl/2, \
+            tests = [b for b in map(lambda f: f/dr(f) > cfl,
                                     freqs) if b]
             if not tests == []:
                 err = 'at least of the frequencies provided makes the wave exceed the CFL \
