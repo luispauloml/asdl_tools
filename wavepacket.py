@@ -50,13 +50,20 @@ condition.'
             else:
                 self.__frequency_content = freqs
 
-    def get_data(self):
-        """Return time history of the wavepacket."""
+    def get_complex_data(self):
+        """Return the actual data for the wavepacket in complex values."""
 
         if self.__data is None:
             self.eval()
 
         return self.__data
+
+    def get_data(self):
+        """Return the time history of the wavepacket."""
+
+        # To get 0 displacement at 0 time, we extract the sine part of
+        # the data, which is its imaginary part
+        return (-np.imag(self.get_complex_data()))
 
     def eval(self):
         """Evaluate the wavepacket."""
