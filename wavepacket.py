@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import pi
 from collections.abc import Iterable
 
 class wavepacket:
@@ -58,4 +59,26 @@ condition.'
         return self.__data
 
     def eval(self):
-        pass
+        """Evaluate the wavepacket."""
+
+        self.__data = 0
+        for f in self.__frequency_content:
+            self.__data += self.__complex_wave(self.__disprel,
+                                               f,
+                                               self.space,
+                                               self.time)
+
+    def __complex_wave(self, disprel, freq, xs, ts):
+        """Return the displacement of a 1D medium due to a 1D complex harmonic wave."""
+
+        w = 2*pi*freq               # angular frequency
+        k = 2*pi*disprel(freq)      # angular wavenumer
+        us = np.zeros((ts.size, xs.size), dtype = np.complex128)
+
+        for i in range(0, ts.size):
+            ps = k*xs - w*ts[i]
+            us[i, :] = (ps <= 0) * np.exp(1j * ps)
+
+        return us
+
+
