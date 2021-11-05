@@ -3,10 +3,37 @@ from numpy import pi
 from collections.abc import Iterable
 
 class wavepacket:
-    """A class for creating wavepackets in 1D domains."""
+    """A class for creating wavepackets in 1D domains.
+
+    The class simulates a wavepacket in a 1D domain given the
+    dispersion relationships of the waves, the discretization
+    parameters, i.e., sampling frequency, spacial step, time and
+    length of the domain, and the frequency spectrum of the packet.
+
+    Parameters:
+    fs : float
+        Sampling frequency in [Hz].
+    dx : float
+        Spatial step in meters.
+    L : float
+        Length of the domain in [m].
+    T : float
+        Total travel time in [s].
+    disprel : function or list of functions
+        The dispersion relationships of the wavepacket.  Each function
+        should take the frequency in hertz and return the wave number
+        in [1/m].
+    freqs : list of float, optional, default: None
+        The frequency spectrum of the wavepacket.  Each element should
+        be a frequency in hertz.  If not given, the object cannot
+        generate any data.
+    normalize : bool, optional, default: True
+        Flag to normalize the data.  If True, the maximum amplitude of
+        the wavepacket will be 1.
+
+    """
 
     def __init__(self, fs, dx, L, T, disprel, freqs = None, normalize = True):
-
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
@@ -33,7 +60,16 @@ class wavepacket:
         self.space = np.arange(0, L, dx)
 
     def set_dispersion(self, disprels):
-        """Set the dispersion relationships of the wavepacket."""
+        """Set the dispersion relationships of the wavepacket.
+
+        Changes the dispersion relationships of the object to new
+        ones.
+
+        Parameters:
+        disprels : function or list of functions
+            Each function should take one argument only, which is the
+            frequency in hertz and return the wavenumber in [1/m].
+        """
 
         # Put in a list if it is not a list
         if not isinstance(disprels, Iterable):
@@ -49,7 +85,15 @@ argument, or a list of such elements.'
         self.__disprel = disprels
 
     def set_spectrum(self, freqs):
-        """Set the frequency spectrum of the wavepacket."""
+        """Set the frequency spectrum of the wavepacket.
+
+        Changes the frequency spectrum of the object to new values.
+
+        Parameters:
+        freqs : list of float
+            A list of frequencies in [Hz].
+        """
+
         if freqs is None:
             self.__spectrum = None
         elif not isinstance(freqs, Iterable):
@@ -70,7 +114,18 @@ spectrum of the wave packet.'
             self.__spectrum = freqs
 
     def get_complex_data(self):
-        """Return the actual data for the wavepacket in complex values."""
+        """Return the actual data for the wavepacket in complex values.
+
+        Returns a matrix of shape (nT, nX) with
+            `nT = T * fs` and `nX = L // dx`,
+        where `T` is the total travel time, `fs` is the sampling
+        frequency, `L` is the length of the domain and `dx` is spatial
+        step.  Therefore, each line `i` of the matrix the displacement
+        of the domain in instant `i / fs` seconds, and each column `j`
+        is the whole time history from 0 to T of a point in position
+        `j * dx`.  If the wavepacket have not been evaluated yet,
+        `eval` with be run.
+        """
 
         if self.__data is None:
             self.eval()
@@ -78,7 +133,11 @@ spectrum of the wave packet.'
         return self.__data
 
     def get_data(self):
-        """Return the time history of the wavepacket."""
+        """Return the time history of the wavepacket.
+
+        It does the same as `get_complex_data` but returns a matrix
+        with real values.
+        """
 
         # To get 0 displacement at 0 time, we extract the sine part of
         # the data, which is its imaginary part
@@ -111,7 +170,16 @@ spectrum of the wave packet.'
         return us
 
     def merge(self, wp):
-        """Merge spectrum and the dispersion relationships of a wavepacket into current one."""
+        """Merge spectrum and disperion relationships of a wavepackets.
+
+        The frequency sepctrum and dispersion relationship of a
+        wavepacket are added to current object.  Data, however, is not
+        merged, and should be recalculated after merge.
+
+        Parameters: wp : wavepacket
+            The wavepacket whose spectrum and disperion relationships
+            will be added to current one.
+        """
 
         if not isinstance(wp, wavepacket):
             err = 'the arguments should be `wavepacket` instances.'
