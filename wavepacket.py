@@ -116,11 +116,14 @@ spectrum of the wave packet.'
             # Check CFL condition for input parameters 
             cfl = self.dx / self.dt
             
-            for d in self.__disprel:
-                for f in freqs:
+            for f in freqs:
+                if f > self.fs:
+                    err = 'at least on of the frequencies is higher than the Nyquist frequency.'
+                    raise ValueError(err)
+                for d in self.__disprel:
                     if f/d(f) > cfl:
-                        err = 'at least of the frequencies provided makes the wave exceed the CFL\
- condition.'
+                        err = 'at least one of the frequencies provided makes the wave exceed \
+the CFL condition.'
                         raise ValueError(err)
 
             self.__spectrum = freqs
