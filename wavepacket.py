@@ -55,7 +55,7 @@ class wavepacket:
         # Discretizing the domain
         self.__time = np.arange(self.__period[0],
                               self.__period[1], 1/fs)
-        self.space = np.arange(self.__length[0],
+        self.__space = np.arange(self.__length[0],
                                self.__length[1], dx)
 
         # flag for data normalization
@@ -130,6 +130,11 @@ spectrum of the wave packet.'
 
         return self.__time
 
+    def get_space(self):
+        """Return the discretized space domain."""
+
+        return self.__space
+
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values.
 
@@ -166,7 +171,7 @@ spectrum of the wave packet.'
         self.__data = 0
         for f in self.__spectrum:
             for d in self.__disprel:
-                self.__data += self.__complex_wave(d, f, self.space,
+                self.__data += self.__complex_wave(d, f, self.__space,
                                                    self.__time)
 
         # Normalizing
