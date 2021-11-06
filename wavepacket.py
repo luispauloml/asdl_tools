@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import pi
 from collections.abc import Iterable
+from warnings import warn
 
 class wavepacket:
     """A class for creating wavepackets in 1D domains.
@@ -118,13 +119,14 @@ spectrum of the wave packet.'
             
             for f in freqs:
                 if f > self.fs:
-                    err = 'at least on of the frequencies is higher than the Nyquist frequency.'
-                    raise ValueError(err)
+                    err = 'at least on of the frequencies is higher than the \
+Nyquist frequency.'
+                    warn(err)
                 for d in self.__disprel:
                     if f/d(f) > cfl:
-                        err = 'at least one of the frequencies provided makes the wave exceed \
-the CFL condition.'
-                        raise ValueError(err)
+                        err = 'at least one of the frequencies provided makes \
+the wave exceed the CFL condition.'
+                        warn(err)
 
             self.__spectrum = freqs
 
