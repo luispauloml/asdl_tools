@@ -15,10 +15,12 @@ class wavepacket:
         Sampling frequency in [Hz].
     dx : float
         Spatial step in meters.
-    L : float
-        Length of the domain in [m].
-    T : float
-        Total travel time in [s].
+    L : float or tuple of float
+        Length of the domain in [m].  If a tuple is provided, is
+        defines the lower and upper limits of the domain.
+    T : float or tuple of float
+        Total travel time in [s].  If a tuple is provided, it defines
+        the lower and upper limits of the time interval.
     disprel : function or list of functions
         The dispersion relationships of the wavepacket.  Each function
         should take the frequency in hertz and return the wave number
@@ -38,11 +40,25 @@ class wavepacket:
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.dt = 1/fs          # Time pace
-        self.__length = L       # Total length of the domain
-        self.__period = T       # Total time of travel
         self.__data = None      # Store date
 
-        # Flag for data normalization
+        # Describing the domain
+        if not isinstance(L, tuple):
+            self.__length = (0, L)
+        else:
+            self.__length = L
+        if not isinstance(T, tuple):
+            self.__period = (0, T)
+        else:
+            self.__period = T
+
+        # Discretizing the domain
+        self.time = np.arange(self.__period[0],
+                              self.__period[1], 1/fs)
+        self.space = np.arange(self.__length[0],
+                               self.__length[1], dx)
+
+        # flag for data normalization
         # Use if statement to garantee that `normalize` becomes bool
         if normalize:
             self.__normalize_flag = True
@@ -54,10 +70,6 @@ class wavepacket:
 
         # Set frequency spectrum
         self.set_spectrum(freqs)
-
-        # Discretizing the domain
-        self.time = np.arange(0, T, 1/fs)
-        self.space = np.arange(0, L, dx)
 
     def set_dispersion(self, disprels):
         """Set the dispersion relationships of the wavepacket.
