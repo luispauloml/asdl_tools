@@ -2,6 +2,7 @@
 
 import numpy as np
 from math import pi
+import scipy.signal.windows as win
 
 def complex_wave(disprel, freq, xs, ts):
     """Return the displacement of a 1D medium due to a 1D complex harmonic wave.
@@ -79,3 +80,30 @@ def wave_packet(disprel, freqs, xs, ts, \
         return (us / np.max(np.abs(us)))
     else:
         return us
+
+def radial2Dwindow(window, Nx, max_dist, offset = None):
+    """Generate a 2D window by revolving a window from scip.signal.windows
+
+The parameters `window` and `Nx` should be the same as those form
+`scipy.signal.windows.get_window`. See help for more information.
+
+`max_dist` is the length of the window for interpolation in the target
+domain, and `offset` is the value by which the center of the window is
+distance from the origin (0,0).
+
+    """
+    ws = win.get_window(window, Nx)
+
+    if offset is None:
+        offset = 0
+    offset = offset - max_dist / 2
+
+    # Unidimensional position for interpolation
+    ps = np.linspace(0, max_dist, Nx) + offset
+
+    def filter(x, y):
+        p = np.sqrt(x**2 + y**2)
+        u = np.interp(p, ps, ws)
+        return u
+
+    return (np.vectorize(filter), ws, ps)
