@@ -1,4 +1,6 @@
 import numpy as np
+from collections.abc import Iterable
+import waves.wavepacket as wp
 
 class membrane:
     """A class for creating finite vibrating membranes.
@@ -48,7 +50,7 @@ class membrane:
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
         self.__xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx))
-        self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dy))
+        self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx))
         self.__grid = np.meshgrid(self.__xs, self.__ys)
 
         # Flag for data normalization
@@ -59,13 +61,13 @@ class membrane:
             self.__normalize_flag = False
 
         # Verify sources
-        if not isinstance(sources, iterable):
+        if not isinstance(sources, Iterable):
             raise ValueError('membrane: sources should be a list')
 
         self.__sources = []
 
         for src, pos in sources:
-            if not isinstance(src, wavepacket):
+            if not isinstance(src, wp.wavepacket):
                 raise ValueError('membrane: tuples describing the source \
 should have a `wavepacket` object in the first position')
             if not isinstance(pos, tuple):
