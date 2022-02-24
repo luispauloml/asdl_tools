@@ -33,17 +33,24 @@ class wavepacket:
     normalize : bool, optional, default: True
         Flag to normalize the data.  If True, the maximum amplitude of
         the wavepacket will be 1.
+    envelope : function of in paramenter, optional, default: None
+        The envelope of the resulting vibration.  Should be a fucntion
+        `f(x)` of one parameter that take the position `x` in meters
+        and returns a factor that will be multiplied to the amplitude
+        of the wavepacket at that position.  The envelope is applied
+        after normalization.
 
     """
 
     def __init__(self, disprel, dx = None, L = None, fs = None, \
-                 T = None, freq = None, normalize = True):
+                 T = None, freq = None, normalize = True, envelope = None):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.dt = None          # Time pace
         self.__data = None      # Store data
         self.__spectrum = []    # Frequency spectrum
+        self.__envelope = None  # Envelope
 
         # Describing the domain
         self.set_time(T)
@@ -61,6 +68,10 @@ class wavepacket:
 
         # Set frequency spectrum
         self.set_spectrum(freq)
+
+        # Set envelope
+        if envelope is not None:
+            self.set_envelope(envelope)
 
     def set_space(self, L):
         """Set the space domaing for the wavepacket.
@@ -181,6 +192,28 @@ the wave exceed the CFL condition.'
 
         self.__spectrum.append(freq)
 
+    def set_envelope(self, envelope):
+        """Set the envelope of the resulting vibration.
+
+        Parameters:
+        envelope : function of one parameter
+            The input is the poistion `x` and the output is a factor
+            that will be multiplied to the amplitude of the vibration
+            at position `x`.
+        """
+
+        if not callable(envelope):
+            err = '`envelope` should be a function of one paramenter.'
+            raise ValueError(err)
+
+        self.__envelope = envelope
+
+        # Try discretizing the envelope
+        xs = self.get_space()
+        if xs is not None:
+            f = np.vectorize(envelope)
+            self.__envelope = f(xs)
+
     def get_time(self):
         """Return the discretized time domain."""
 
@@ -238,6 +271,11 @@ the wave exceed the CFL condition.'
             err = 'the spatial domain is not set. use set_space()'
             raise ValueError(err)
 
+        # Check envelope one last time
+        if self.__envelope is not None:
+            if callable(self.__envelope):
+                self.set_envelope(self.__envelope)
+
         self.__data = 0
         for f in self.__spectrum:
             for d in self.__disprel:
@@ -247,6 +285,11 @@ the wave exceed the CFL condition.'
         # Normalizing
         if self.__normalize_flag:
             self.__data = self.__data / np.max(np.abs(self.__data))
+
+        # Apply envelope
+        if self.__envelope is not None:
+            for i in range(0, self.__data.shape[0]):
+                self.__data[i,:] *= self.__envelope
 
     def __complex_wave(self, disprel, freq, xs, ts):
         """Return the displacement of a 1D medium due to a 1D complex harmonic wave."""
