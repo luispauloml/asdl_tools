@@ -103,15 +103,50 @@ should have a tuple (float, float) in the second position')
             source.set_time(T)
             self.__sources.append((source, pos, dist))
 
-        def getX_grid(self):
-            """Return a 2-D matrix with the x coordinates of memebrane."""
+        def __getPos(self, coord, shape):
+            """Return the position vector or matrix."""
+
+            if coord not in ['x', 'y']:
+                raise ValueError("`coord` should be either 'x' or 'y'")
+            if shape not in ['vector', 'grid']:
+                raise ValueError("`shape` should be either 'vector' or \
+'grid'")
+            if coord == 'x':
+                if coord == 'vector':
+                    return self.__xs
+                else:
+                    return self.__grid[0]
+            else:
+                if coord == 'vector':
+                    return self.__ys
+                else:
+                    return self.__grid[1]
+
+        def getX(self, shape = 'grid'):
+            """Return a 2-D matrix with the x coordinates of memebrane.
+
+            Parameters:
+            shape : string, optional, default: 'grid'
+                If `shape` is 'vector' a vector is returned,
+                otherwise, a 2-D matrix is return.
+
+            """
+
+            return self.__getPos('x', shape)
 
             return self.__grid[0]
 
-        def getY_grid(self):
-            """Return a 2-D matrix with the y coordinates of memebrane."""
+        def getY(self, fomart = 'grid'):
+            """Return a 2-D matrix with the y coordinates of memebrane.
 
-            return self.__grid[1]
+            Parameters:
+            shape : string, optional, default: 'grid'
+                If `shape` is 'vector' a vector is returned,
+                otherwise, a 2-D matrix is return.
+
+            """
+
+            return self.__getPos('y', shape)
 
         def eval(self):
             """Evaluate the displacement of the memebrane."""
@@ -143,8 +178,8 @@ should have a tuple (float, float) in the second position')
             page `k` of the matrix is the "photograph" of the
             displacement of the domain in instante `k / fs`.  Each
             element (i, j, k) can be mapped to a position via the
-            index (i, j) in the matrices obtained by `getX_grid` and
-            `getY_grid` methods.
+            index (i, j) in the matrices obtained by `getX` and
+            `getY` methods.
             """
 
             return self.__data
