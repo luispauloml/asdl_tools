@@ -37,12 +37,13 @@ class wavepacket:
     """
 
     def __init__(self, disprel, dx = None, L = None, fs = None, \
-                 T = None, freqs = None, normalize = True):
+                 T = None, freq = None, normalize = True):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.dt = None          # Time pace
         self.__data = None      # Store data
+        self.__spectrum = []    # Frequency spectrum
 
         # Describing the domain
         self.set_time(T)
@@ -59,7 +60,7 @@ class wavepacket:
         self.set_dispersion(disprel)
 
         # Set frequency spectrum
-        self.set_spectrum(freqs)
+        self.set_spectrum(freq)
 
     def set_space(self, L):
         """Set the space domaing for the wavepacket.
@@ -86,7 +87,6 @@ class wavepacket:
                                      self.__length[1], self.dx)
 
     def set_time(self, T):
-
         """Set the total travel time of the wavepacket.
 
         Parameters:
@@ -136,43 +136,50 @@ argument, or a list of such elements.'
 
         self.__disprel = disprels
 
-    def set_spectrum(self, freqs):
+    def set_spectrum(self, freq):
         """Set the frequency spectrum of the wavepacket.
 
         Changes the frequency spectrum of the object to new values.
 
         Parameters:
-        freqs : list of float
-            A list of frequencies in [Hz].
+        freqs : number or list of numbers (int or float)
+            The frequencies of the wavepacket in [Hz].  A None
+            anywhere in the list will reset the whole spectrum to empty.
+
         """
 
-        if freqs is None:
-            self.__spectrum = None
-        elif not isinstance(freqs, Iterable):
-            err = '`freqs` should be an iterable, e.g., a list containing \
-the frequency spectrum of the wave packet.'
+        if isinstance(freq, Iterable):
+            for f in freq:
+                self.set_spectrum(f)
+            return
+
+        if freq is None:
+            self.__spectrum = []
+            return
+
+        if not isinstance(freq, (int, float)):
+            err = '`freqs` should be a number or an iterable, \
+e.g. a list, containing the frequency spectrum of the wave packet.'
             raise TypeError(err)
-        elif self.dx is None or self.fs is None:
+
+        if self.dx is None or self.fs is None:
             err = 'either the sampling frequency `fs` or the spatial pace \
 `dx` is not set; CFL condition cannot be checked.'
             warn(err)
-            self.__spectrum = freqs
         else:
             # Check CFL condition for input parameters 
             cfl = self.dx / self.dt
-            
-            for f in freqs:
-                if f > self.fs:
-                    err = 'at least on of the frequencies is higher than the \
+            if freq > self.fs:
+                err = 'at least on of the frequencies is higher than the \
 Nyquist frequency.'
-                    warn(err)
-                for d in self.__disprel:
-                    if f/d(f) > cfl:
-                        err = 'at least one of the frequencies provided makes \
+                warn(err)
+            for d in self.__disprel:
+                if freq/d(freq) > cfl:
+                    err = 'at least one of the frequencies provided makes \
 the wave exceed the CFL condition.'
-                        warn(err)
+                    warn(err)
 
-            self.__spectrum = freqs
+        self.__spectrum.append(freq)
 
     def get_time(self):
         """Return the discretized time domain."""
@@ -225,7 +232,7 @@ the wave exceed the CFL condition.'
             err = 'the time interval is not set. use set_time()'
             raise ValueError(err)
         if self.dx is None:
-            err = 'the spatial time `dx` is not set.'
+            err = 'the spatial pace `dx` is not set.'
             raise ValueError(err)
         if self.__space is None:
             err = 'the spatial domain is not set. use set_space()'
