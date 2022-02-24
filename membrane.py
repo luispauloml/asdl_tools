@@ -7,11 +7,6 @@ class membrane:
     """A class for creating finite vibrating membranes.
 
     Parameters:
-    sources : list of (wavepacket, (float, float))
-        The sources of the vibration and their positions.  The sources
-        should be objects of the `wavepacket` class, and the position
-        is a tuple (x, y) where `x` and `y` are floats indicating the
-        position of the source in the xy-plane.
     fs : float
         Sampling frequency in [Hz].
     dx : float
@@ -22,13 +17,19 @@ class membrane:
     T : float or tuple (float, float)
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
+    sources : list of (wavepacket, (float, float)), optional,
+        default = None
+        The sources of the vibration and their positions.  The sources
+        should be objects of the `wavepacket` class, and the position
+        is a tuple (x, y) where `x` and `y` are floats indicating the
+        position of the source in the xy-plane.
     normalize : bool, optional, default: True
         Flag do normalize the data.  If True, the maximum amplitude in
         the membrane domain will be 1.
 
    """
 
-    def __init__(self, fs, dx, size, T, sources, normalize = True):
+    def __init__(self, fs, dx, size, T, sources = None, normalize = True):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
@@ -62,21 +63,31 @@ class membrane:
             self.__normalize_flag = False
 
         # Verify sources
-        if not isinstance(sources, Iterable):
-            raise ValueError('membrane: sources should be a list')
-
         self.__sources = []
+        if sources is not None:
+            if not isinstance(sources, Iterable):
+                raise ValueError('membrane: sources should be a list or None')
+            else:
+                for src, pos in sources:
+                    self.add_source(src, pos)
 
-        for src, pos in sources:
-            if not isinstance(src, wp.wavepacket):
-                raise ValueError('membrane: tuples describing the source \
+    def add_source(self, source, pos):
+        """Add a source to the membrane.
+
+        Parameters:
+        source : wavepacket object
+        pos: (float, float)
+            The (x, y) position of the source
+
+        """
+
+        if not isinstance(source, wp.wavepacket):
+            raise ValueError('membrane: tuples describing the source \
 should have a `wavepacket` object in the first position')
-            if not isinstance(pos, tuple):
-                raise ValueError('membrane: tuples describing the source \
+        if not isinstance(pos, tuple):
+            raise ValueError('membrane: tuples describing the source \
 should have a tuple (float, float) in the second position')
-            self.__setup_source(src, pos)
 
-    def __setup_source(self, source, pos):
         # To reduce computing time we set the domain of the source
         # as:
         #    - [0, d_max] if the source is inside the membrane
