@@ -12,20 +12,20 @@ class wavepacket:
     length of the domain, and the frequency spectrum of the packet.
 
     Parameters:
-    fs : float
-        Sampling frequency in [Hz].
-    dx : float
-        Spatial step in meters.
-    L : float or tuple of float
-        Length of the domain in [m].  If a tuple is provided, is
-        defines the lower and upper limits of the domain.
-    T : float or tuple of float
-        Total travel time in [s].  If a tuple is provided, it defines
-        the lower and upper limits of the time interval.
     disprel : function or list of functions
         The dispersion relationships of the wavepacket.  Each function
         should take the frequency in hertz and return the wave number
         in [1/m].
+    dx : float, optional, default: None
+        Spatial step in meters.
+    L : float or tuple of float, optional, default: None
+        Length of the domain in [m].  If a tuple is provided, is
+        defines the lower and upper limits of the domain.
+    fs : float, optional, default: None
+        Sampling frequency in [Hz].
+    T : float or (float, float), optiona, default: None
+        Total travel time in [s].  If a tuple is provided, it defines
+        the lower and upper limits of the time interval.
     freqs : list of float, optional, default: None
         The frequency spectrum of the wavepacket.  Each element should
         be a frequency in hertz.  If not given, the object cannot
@@ -36,28 +36,17 @@ class wavepacket:
 
     """
 
-    def __init__(self, fs, dx, L, T, disprel, freqs = None, normalize = True):
+    def __init__(self, disprel, dx = None, L = None, fs = None, \
+                 T = None, freqs = None, normalize = True):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
-        self.dt = 1/fs          # Time pace
-        self.__data = None      # Store date
+        self.dt = None          # Time pace
+        self.__data = None      # Store data
 
         # Describing the domain
-        if not isinstance(L, tuple):
-            self.__length = (0, L)
-        else:
-            self.__length = L
-        if not isinstance(T, tuple):
-            self.__period = (0, T)
-        else:
-            self.__period = T
-
-        # Discretizing the domain
-        self.__time = np.arange(self.__period[0],
-                              self.__period[1], 1/fs)
-        self.__space = np.arange(self.__length[0],
-                               self.__length[1], dx)
+        self.set_time(T)
+        self.set_space(L)
 
         # flag for data normalization
         # Use if statement to garantee that `normalize` becomes bool
@@ -71,6 +60,56 @@ class wavepacket:
 
         # Set frequency spectrum
         self.set_spectrum(freqs)
+
+    def set_space(self, L):
+        """Set the space domaing for the wavepacket.
+
+        Parameters:
+        L : float or (float, float)
+          If L is a tuple, it sets the lower and uppper limits of the
+          space domain.
+
+        """
+
+        self.__space = None
+        if L is None:
+            self.__length = None
+            return
+
+        if not isinstance(L, tuple):
+            self.__length = (0, L)
+        else:
+            self.__length = L
+
+        if self.dx is not None:
+            self.__space = np.arange(self.__length[0],
+                                     self.__length[1], self.dx)
+
+    def set_time(self, T):
+
+        """Set the total travel time of the wavepacket.
+
+        Parameters:
+        T : float or (float, float)
+          If T is a tuple, it sets the lower and upper limits of the
+          time interval.
+
+        """
+
+        self.__time = None
+        if T is None:
+            self.__period = None
+            return
+
+        if not isinstance(T, tuple):
+            self.__period = (0, T)
+        else:
+            self.__period = T
+
+        if self.fs is not None:
+            self.dt = 1/self.fs
+            self.__time = np.arange(self.__period[0],
+                                    self.__period[1], self.dt)
 
     def set_dispersion(self, disprels):
         """Set the dispersion relationships of the wavepacket.
@@ -110,9 +149,14 @@ argument, or a list of such elements.'
         if freqs is None:
             self.__spectrum = None
         elif not isinstance(freqs, Iterable):
-            err = '`freqs` should be an iterable, e.g., a list containing the frequency \
-spectrum of the wave packet.'
+            err = '`freqs` should be an iterable, e.g., a list containing \
+the frequency spectrum of the wave packet.'
             raise TypeError(err)
+        elif self.dx is None or self.fs is None:
+            err = 'either the sampling frequency `fs` or the spatial pace \
+`dx` is not set; CFL condition cannot be checked.'
+            warn(err)
+            self.__spectrum = freqs
         else:
             # Check CFL condition for input parameters 
             cfl = self.dx / self.dt
@@ -172,6 +216,20 @@ the wave exceed the CFL condition.'
 
     def eval(self):
         """Evaluate the wavepacket."""
+
+        # Check if all information is available
+        if self.fs is None:
+            err = 'the sampling frequency `fs` is not set.'
+            raise ValueError(err)
+        if self.__time is None:
+            err = 'the time interval is not set. use set_time()'
+            raise ValueError(err)
+        if self.dx is None:
+            err = 'the spatial time `dx` is not set.'
+            raise ValueError(err)
+        if self.__space is None:
+            err = 'the spatial domain is not set. use set_space()'
+            raise ValueError(err)
 
         self.__data = 0
         for f in self.__spectrum:
