@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from collections.abc import Iterable
 import waves.wavepacket as wp
@@ -99,6 +100,7 @@ should have a tuple (float, float) in the second position')
         else:
             d_min = np.min(dist)
 
+        source = copy.deepcopy(source)
         source.dx = self.dx
         source.fs = self.fs
         source.set_space((d_min, d_max))
