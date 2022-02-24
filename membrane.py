@@ -178,6 +178,10 @@ should have a tuple (float, float) in the second position')
             for i, t in enumerate(self.__time):
                 data[:,:,i] += np.interp(dist, src_domain, src_disp[i,:])
 
+        # Normalizing
+        if self.__normalize_flag:
+            data /= np.max(np.abs(data))
+
         self.__data = data
 
     def get_data(self):
