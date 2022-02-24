@@ -3,7 +3,7 @@ import numpy as np
 from collections.abc import Iterable
 import waves.wavepacket as wp
 
-class membrane:
+class Membrane:
     """A class for creating finite vibrating membranes.
 
     Parameters:
@@ -17,10 +17,10 @@ class membrane:
     T : float or tuple (float, float)
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
-    sources : list of (wavepacket, (float, float)), optional,
+    sources : list of (Wavepacket, (float, float)), optional,
         default = None
         The sources of the vibration and their positions.  The sources
-        should be objects of the `wavepacket` class, and the position
+        should be objects of the `Wavepacket` class, and the position
         is a tuple (x, y) where `x` and `y` are floats indicating the
         position of the source in the xy-plane.
     normalize : bool, optional, default: True
@@ -37,7 +37,7 @@ class membrane:
 
         # Describing the domain
         if not isinstance(size, tuple):
-            raise ValueError('membrane: size should be a tuple of floats')
+            raise ValueError('Membrane: size should be a tuple of floats')
         else:
             self.__Lx = size[0]     # Length in x direction
             self.__Ly = size[1]     # Length in y direction
@@ -66,7 +66,7 @@ class membrane:
         self.__sources = []
         if sources is not None:
             if not isinstance(sources, Iterable):
-                raise ValueError('membrane: sources should be a list or None')
+                raise ValueError('Membrane: sources should be a list or None')
             else:
                 for src, pos in sources:
                     self.add_source(src, pos)
@@ -75,17 +75,17 @@ class membrane:
         """Add a source to the membrane.
 
         Parameters:
-        source : wavepacket object
+        source : Wavepacket object
         pos: (float, float)
             The (x, y) position of the source
 
         """
 
-        if not isinstance(source, wp.wavepacket):
-            raise ValueError('membrane: tuples describing the source \
-should have a `wavepacket` object in the first position')
+        if not isinstance(source, wp.Wavepacket):
+            raise ValueError('Membrane: tuples describing the source \
+should have a `Wavepacket` object in the first position')
         if not isinstance(pos, tuple):
-            raise ValueError('membrane: tuples describing the source \
+            raise ValueError('Membrane: tuples describing the source \
 should have a tuple (float, float) in the second position')
 
         # To reduce computing time we set the domain of the source

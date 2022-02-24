@@ -3,7 +3,7 @@ from numpy import pi
 from collections.abc import Iterable
 from warnings import warn
 
-class wavepacket:
+class Wavepacket:
     """A class for creating wavepackets in 1D domains.
 
     The class simulates a wavepacket in a 1D domain given the
@@ -311,13 +311,13 @@ the wave exceed the CFL condition.'
         wavepacket are added to current object.  Data, however, is not
         merged, and should be recalculated after merge.
 
-        Parameters: wp : wavepacket
+        Parameters: wp : Wavepacket
             The wavepacket whose spectrum and disperion relationships
             will be added to current one.
         """
 
         if not isinstance(wp, wavepacket):
-            err = 'the arguments should be `wavepacket` instances.'
+            err = 'the arguments should be `Wavepacket` instances.'
             raise TypeError(err)
 
         self.__spectrum.extend(wp.__spectrum)
