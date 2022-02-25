@@ -284,7 +284,9 @@ the wave exceed the CFL condition.'
 
         # Normalizing
         if self.__normalize_flag:
-            self.__data = self.__data / np.max(np.abs(self.__data))
+            max_abs = np.max(np.abs(self.__data))
+            if max_abs >= 1e-24:
+                self.__data /= max_abs
 
         # Apply envelope
         if self.__envelope is not None:

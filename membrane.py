@@ -295,12 +295,14 @@ should not have been reached.')
             src_disp = src.get_data()
             src_domain = src.get_space()
 
-            for i, t in enumerate(self.__time):
+            for i, _ in enumerate(self.__time):
                 data[:,:,i] += np.interp(dist, src_domain, src_disp[i,:])
 
         # Normalizing
         if self.__normalize_flag:
-            data /= np.max(np.abs(data))
+            max_abs = np.max(np.abs(data))
+            if max_abs >= 1e-24:
+                data /= max_abs
 
         self.__data = data
 
