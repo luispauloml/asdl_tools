@@ -26,14 +26,24 @@ class Membrane:
     normalize : bool, optional, default: True
         Flag do normalize the data.  If True, the maximum amplitude in
         the membrane domain will be 1.
+    boundary : string or int, optional, default: 'transparent'
+        Sets the boundary conditions of the membrane.  The possible
+        string values are: 'free' or 'transparent'.  If set to 'free',
+        aditional sources will be added to simulated reflection at the
+        boundaries without change of phase of the wave.  If set to
+        'transparent', no reflection will be accounted for.  If it is a
+        int, it will set the number of iteration to recursively add
+        new sources to simulate reflections.
 
-   """
+    """
 
-    def __init__(self, fs, dx, size, T, sources = None, normalize = True):
+    def __init__(self, fs, dx, size, T,
+                 sources = None, normalize = True, boundary = 'transparent'):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.__data = None      # Store data
+        self.__boundary = boundary
 
         # Describing the domain
         if not isinstance(size, tuple):
@@ -55,6 +65,10 @@ class Membrane:
         self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx))
         self.__grid = np.meshgrid(self.__xs, self.__ys)
 
+        # Update Lx and Ly
+        self.__Lx = 2 * self.__xs[-1]
+        self.__Ly = 2 * self.__ys[-1]
+
         # Flag for data normalization
         # Use if statement to garantee that `normalize` becomes bool
         if normalize:
@@ -64,6 +78,7 @@ class Membrane:
 
         # Verify sources
         self.__sources = []
+        self.__reflected_sources = []
         if sources is not None:
             if not isinstance(sources, Iterable):
                 raise ValueError('Membrane: sources should be a list or None')
@@ -87,6 +102,34 @@ should have a `Wavepacket` object in the first position')
         if not isinstance(pos, tuple):
             raise ValueError('Membrane: tuples describing the source \
 should have a tuple (float, float) in the second position')
+
+        self.__add_source_to_list(source, pos, reflected = False)
+
+        # Check boundary condition
+        if self.__boundary == 'transparent':
+            return
+        elif self.__boundary == 'free' or isinstance(self.__boundary, int):
+            # Fist iteration
+            reflected_positions = self.__reflect_position(pos)
+
+            # Additional iterations
+            if isinstance(self.__boundary, int):
+                tmp1 = copy.deepcopy(reflected_positions)
+                tmp2 = []
+
+                for k in range(0, self.__boundary - 1):
+                    for p in tmp1:
+                        tmp2 += self.__reflect_position(p)
+
+                    reflected_positions += tmp2
+                    tmp1, tmp2 = tmp2, []
+
+            # Adding to the membrane
+            for p in reflected_positions:
+                self.__add_source_to_list(source, p, reflected = True)
+
+    def __add_source_to_list(self, source, pos, reflected = False):
+        """Add a real or a reflected source."""
 
         # To reduce computing time we set the domain of the source
         # as:
@@ -116,7 +159,84 @@ should have a tuple (float, float) in the second position')
         source.fs = self.fs
         source.set_space((d_min, d_max))
         source.set_time(self.__period)
-        self.__sources.append((source, pos, dist))
+
+        if reflected:
+            self.__reflected_sources.append((source, pos, dist))
+        else:
+            self.__sources.append((source, pos, dist))
+
+    def __reflect_position(self, pos):
+        """Check the region in which the source is located."""
+
+        # Notation:
+        #  0: inside the membrane domain
+        #  1 to 8: outside
+        #  a to d: the edges of the membrane
+        #
+        #  1 | 2 | 3 
+        # ___|_a_|___
+        #    |   |
+        #  8 d 0 b 4 
+        # ___|_c_|___
+        #    |   |
+        #  7 | 6 | 5
+
+        x, y = pos
+        Dx, Dy = self.__Lx/2, self.__Ly/2
+        new_coord = lambda b, p: 2 * b - p
+        new_pos = lambda inds: \
+            list(map(lambda i:
+                     {'a': (x, new_coord(Dy, y)),
+                      'b': (new_coord(Dx, x), y),
+                      'c': (x, new_coord(-Dy, y)),
+                      'd': (new_coord(-Dx, x), y)}[i],
+                     inds))
+
+        if (-Dx < x < Dx and
+            -Dy < y < Dy):
+            # Region 0 -> reflect on [a, b, c, d]
+            reflections = new_pos(['a', 'b', 'c', 'd'])
+
+        elif y > Dy and x < - Dx:
+            # Region 1 -> reflect on [b, c]
+            reflections = new_pos(['b', 'c'])
+
+        elif (y > Dy and
+              -Dx <= x < Dx):
+            # Region 2 -> reflect on [b, c, d]
+            reflections = new_pos(['b', 'c', 'd'])
+
+        elif y > Dy and x >= Dx:
+            # Region 3 -> reflect on [c, d]
+            reflections = new_pos(['c', 'd'])
+
+        elif (x > Dx and
+              -Dy <= y <= Dy):
+            # Region 4 -> reflect on [a, c, d]
+            reflections = new_pos(['a', 'c', 'd'])
+
+        elif x >= Dx and y <= Dy:
+            # Region 5 -> reflect on [a, d]
+            reflections = new_pos(['a', 'd'])
+
+        elif y < -Dy and -Dx <= x < Dx:
+            # Region 6 -> reflect on [a, b, d]
+            reflections = new_pos(['a', 'b', 'd'])
+
+        elif y < -Dy and x < -Dx:
+            # Region 7 -> reflect on [a, b]
+            reflections = new_pos(['a', 'b'])
+
+        elif (x < -Dx and
+              -Dy <= y <= Dy):
+            # Region 8 -> reflect on [a, b, c]
+            reflections = new_pos(['a', 'b', 'c'])
+
+        else:
+            raise ValueError('something went wrong and this condition \
+should not have been reached.')
+
+        return reflections
 
     def __getPos(self, coord, shape):
         """Return the position vector or matrix."""
@@ -170,7 +290,7 @@ should have a tuple (float, float) in the second position')
                          self.__ys.size, \
                          self.__time.size))
 
-        for src, pos, dist in self.__sources:
+        for src, pos, dist in (self.__sources + self.__reflected_sources):
             src.eval()
             src_disp = src.get_data()
             src_domain = src.get_space()
