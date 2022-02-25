@@ -155,6 +155,7 @@ should have a tuple (float, float) in the second position')
             d_min = np.min(dist)
 
         source = copy.deepcopy(source)
+        source.purge_data()
         source.dx = self.dx
         source.fs = self.fs
         source.set_space((d_min, d_max))
@@ -298,6 +299,8 @@ should not have been reached.')
             for i, _ in enumerate(self.__time):
                 data[:,:,i] += np.interp(dist, src_domain, src_disp[i,:])
 
+            src.purge_data()
+
         # Normalizing
         if self.__normalize_flag:
             max_abs = np.max(np.abs(data))
@@ -324,3 +327,9 @@ should not have been reached.')
         """
 
         return self.__data
+
+    def purge_data(self):
+        """Delete the eavluated data stored in the object."""
+
+        del(self.__data)
+        self.__data = None

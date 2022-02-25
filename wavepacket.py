@@ -254,6 +254,12 @@ the wave exceed the CFL condition.'
         # the data, which is its imaginary part
         return (-np.imag(self.get_complex_data()))
 
+    def purge_data(self):
+        """Delete the evaluated data stored in the object."""
+
+        del(self.__data)
+        self.__data = None
+
     def eval(self):
         """Evaluate the wavepacket."""
 
