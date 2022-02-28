@@ -173,23 +173,6 @@ argument, or a list of such elements.'
 e.g. a list, containing the frequency spectrum of the wave packet.'
             raise TypeError(err)
 
-        if self.dx is None or self.fs is None:
-            err = 'either the sampling frequency `fs` or the spatial pace \
-`dx` is not set; CFL condition cannot be checked.'
-            warn(err)
-        else:
-            # Check CFL condition for input parameters 
-            cfl = self.dx / self.dt
-            if freq > self.fs:
-                err = 'at least on of the frequencies is higher than the \
-Nyquist frequency.'
-                warn(err)
-            for d in self.__disprel:
-                if freq/d(freq) > cfl:
-                    err = 'at least one of the frequencies provided makes \
-the wave exceed the CFL condition.'
-                    warn(err)
-
         self.__spectrum.append(freq)
 
     def set_envelope(self, envelope):
