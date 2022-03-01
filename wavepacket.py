@@ -1,7 +1,7 @@
-import numpy as np
 from numpy import pi
 from collections.abc import Iterable
-from warnings import warn
+import numpy as np
+import waves.base as base
 
 class Wavepacket:
     """A class for creating wavepackets in 1D domains.
@@ -268,8 +268,8 @@ e.g. a list, containing the frequency spectrum of the wave packet.'
         self.__data = 0
         for f in self.__spectrum:
             for d in self.__disprel:
-                self.__data += self.__complex_wave(d, f, self.__space,
-                                                   self.__time)
+                self.__data += base.complex_wave(d, f, self.__space,
+                                                 self.__time)
 
         # Normalizing
         if self.__normalize_flag:
@@ -281,19 +281,6 @@ e.g. a list, containing the frequency spectrum of the wave packet.'
         if self.__envelope is not None:
             for i in range(0, self.__data.shape[0]):
                 self.__data[i,:] *= self.__envelope
-
-    def __complex_wave(self, disprel, freq, xs, ts):
-        """Return the displacement of a 1D medium due to a 1D complex harmonic wave."""
-
-        w = 2*pi*freq               # angular frequency
-        k = 2*pi*disprel(freq)      # angular wavenumer
-        us = np.zeros((ts.size, xs.size), dtype = np.complex128)
-
-        for i in range(0, ts.size):
-            ps = k*xs - w*ts[i]
-            us[i, :] = (ps <= 0) * np.exp(1j * ps)
-
-        return us
 
     def merge(self, wp):
         """Merge spectrum and disperion relationships of a wavepackets.
