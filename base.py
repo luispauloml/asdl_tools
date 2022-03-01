@@ -1,7 +1,5 @@
-#!/bin/python3
-
-import numpy as np
 from math import pi
+import numpy as np
 import scipy.signal.windows as win
 
 def complex_wave(disprel, freq, xs, ts):
