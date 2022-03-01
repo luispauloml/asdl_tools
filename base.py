@@ -44,6 +44,39 @@ def harmonic_wave(disprel, freq, xs, ts):
 
     return (-np.imag(complex_wave(disprel, freq, xs, ts)))
 
+def interp(matrix, xs, data):
+    """Interpolate data over matrix.
+
+    This functions interpolates the values of `data` over `matrix`
+    based on the values of `xs`.  It is useful to interplote results
+    from `complex_wave` of 2D domains.
+
+    `xs` and `data` should be numpy.array of shapes (n,) and (m,n),
+    respectively.  `matrix` should be a numpy.array.  If `matrix` has
+    shape (p,) this function will return an array of shape (m,p); if
+    it has shape (p,q), the returned value will have shape (p,q,m).
+
+    """
+
+    dims = len(matrix.shape)
+    interp_vals = lambda i: np.interp(matrix, xs, data[i,:])
+    if dims == 1:
+        return_val = np.empty((data.shape[0], matrix.shape[0]))
+        for i in range(0, return_val.shape[0]):
+            return_val[i,:] = interp_vals(i)
+
+    elif dims == 2:
+        return_val = np.empty((matrix.shape[0],
+                               matrix.shape[1],
+                               data.shape[0]))
+        for i in range(0, return_val.shape[2]):
+            return_val[:,:,i] = interp_vals(i)
+
+    else:
+        raise ValueError('`matrix` can have 1 or 2 dimensions only.')
+
+    return return_val
+
 def radial2Dwindow(window, Nx, max_dist, offset = None):
     """Generate a 2D window by revolving a window from scip.signal.windows
 

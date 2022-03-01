@@ -1,7 +1,8 @@
 import copy
 import numpy as np
-from collections.abc import Iterable
+import waves.base as base
 import waves.wavepacket as wp
+from collections.abc import Iterable
 
 class Membrane:
     """A class for creating finite vibrating membranes.
@@ -298,11 +299,10 @@ should not have been reached.')
 
         for src, pos, dist in (self.__sources + self.__reflected_sources):
             src.eval()
-            src_disp = src.get_data()
+            src_data = src.get_data()
             src_domain = src.get_space()
 
-            for i, _ in enumerate(self.__time):
-                data[:,:,i] += np.interp(dist, src_domain, src_disp[i,:])
+            data += base.interp(dist, src_domain, src_data)
 
             src.purge_data()
 
