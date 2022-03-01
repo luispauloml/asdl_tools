@@ -44,41 +44,6 @@ def harmonic_wave(disprel, freq, xs, ts):
 
     return (-np.imag(complex_wave(disprel, freq, xs, ts)))
 
-def wave_packet(disprel, freqs, xs, ts, \
-                normalize = True, \
-                amplitudes = None):
-    """Return the displacement of a 1D medium due to a 1D wave packet.
-
-    It is the result of iterating `complex_wave` over `freqs`, which
-    should be a iterable containing the linear frequencies of each
-    component of the wave packet.
-
-    If `normalize` is True, the result is normalized by the maximum
-    absolute value contained in it.
-
-    If `amplitudes` is not provided, all components will have the
-    amplitude equal to one. If it is provided, it should have the same
-    length as `freqs`.
-
-    For more information on the other arguments, see
-    `help(complex_wave)`.
-
-    """
-
-    us = np.zeros((ts.size, xs.size), dtype = np.complex128)
-
-    if amplitudes is None:
-        amplitudes = np.ones((len(freqs),))
-
-    nf = len(freqs)
-    for i in range(0, nf):
-        us += amplitudes[i] * complex_wave(disprel, freqs[i], xs, ts)
-
-    if normalize:
-        return (us / np.max(np.abs(us)))
-    else:
-        return us
-
 def radial2Dwindow(window, Nx, max_dist, offset = None):
     """Generate a 2D window by revolving a window from scip.signal.windows
 
