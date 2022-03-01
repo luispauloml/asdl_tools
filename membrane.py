@@ -58,11 +58,15 @@ class Membrane:
 
         # Discretizing the domain
         self.__time = np.arange(self.__period[0],
-                                self.__period[1], 1/fs)
+                                self.__period[1],
+                                1/fs,
+                                dtype = np.float32)
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
-        self.__xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx))
-        self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx))
+        self.__xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx,
+                                              dtype = np.float32))
+        self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx,
+                                              dtype = np.float32))
         self.__grid = np.meshgrid(self.__xs, self.__ys)
 
         # Update Lx and Ly
@@ -287,9 +291,10 @@ should not have been reached.')
     def eval(self):
         """Evaluate the displacement of the memebrane."""
 
-        data = np.zeros((self.__xs.size, \
-                         self.__ys.size, \
-                         self.__time.size))
+        data = np.zeros((self.__xs.size,
+                         self.__ys.size,
+                         self.__time.size),
+                        dtype = np.float32)
 
         for src, pos, dist in (self.__sources + self.__reflected_sources):
             src.eval()

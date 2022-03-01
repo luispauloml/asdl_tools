@@ -22,7 +22,7 @@ def complex_wave(disprel, freq, xs, ts):
 
     w = 2*pi*freq               # angular frequency
     k = 2*pi*disprel(freq)      # angular wavenumer
-    us = np.zeros((ts.size, xs.size), dtype = np.complex128)
+    us = np.zeros((ts.size, xs.size), dtype = np.complex64)
 
     for i in range(0, ts.size):
         ps = k*xs - w*ts[i]
