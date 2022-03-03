@@ -18,5 +18,6 @@ setup(
     author_email='luispauloml@gmail.com',
     url='https://github.com/luispauloml/waves',
     license=license,
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=['numpy']
 )

@@ -13,6 +13,11 @@ a point source.  The results are calculated by using complex
 exponential functions, which are the analytical solutions to most of
 the problems in wave propagation.
 
+Dependencies
+~~~~~~~~~~~~
+
+* Numpy.
+
 
 Installation
 ~~~~~~~~~~~~
