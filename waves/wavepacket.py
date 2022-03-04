@@ -46,166 +46,198 @@ class Wavepacket:
                  T = None, freq = None, normalize = True, envelope = None):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
+        self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
-        self.dt = None          # Time pace
         self.__data = None      # Store data
-        self.__spectrum = []    # Frequency spectrum
-        self.__envelope = None  # Envelope
+        self.envelope = envelope # Envelope
 
-        # Describing the domain
-        self.set_time(T)
-        self.set_space(L)
+        self.time = T
+        self.domain = L
+        self.dispersion = disprel
+        self.normalize = normalize
 
-        # flag for data normalization
+    @property
+    def normalize(self):
+        """flag for noramlization of values"""
+        return self._normalize_flag
+
+    @normalize.setter
+    def normalize(self, flag):
         # Use if statement to garantee that `normalize` becomes bool
-        if normalize:
-            self.__normalize_flag = True
+        if flag:
+            self._normalize_flag = True
         else:
-            self.__normalize_flag = False
+            self._normalize_flag = False
 
-        # Set dispersion relationship
-        self.set_dispersion(disprel)
+    @property
+    def fs(self):
+        """the sampling frequency"""
+        if self.dt is None:
+            return None
+        else:
+            return 1/self.dt
 
-        # Set frequency spectrum
-        self.set_spectrum(freq)
+    @fs.setter
+    def fs(self, fs):
+        if fs is None:
+            self.dt = None
+        else:
+            self.dt = 1/fs
 
-        # Set envelope
-        if envelope is not None:
-            self.set_envelope(envelope)
+    @property
+    def domain(self):
+        """the limits of the space domain"""
+        return self._xlim
 
-    def set_space(self, L):
-        """Set the space domaing for the wavepacket.
+    @domain.setter
+    def domain(self, L):
+        self._xs = None
 
-        Parameters:
-        L : float or (float, float)
-          If L is a tuple, it sets the lower and uppper limits of the
-          space domain.
-
-        """
-
-        self.__space = None
         if L is None:
-            self.__length = None
+            self._xlim = None
             return
 
         if not isinstance(L, tuple):
-            self.__length = (0, L)
+            self.domain = (0, L)
         else:
-            self.__length = L
+            for i in range(0, 2):
+                if not isinstance(L[i], (int, float)):
+                    err = 'The limits of the domain should be numbers.'
+            self._xlim = (L[0], L[1])
 
-        if self.dx is not None:
-            self.__space = np.arange(self.__length[0],
-                                     self.__length[1], self.dx)
+    @property
+    def time(self):
+        """the limits of the time domain"""
+        return self._tlim
 
-    def set_time(self, T):
-        """Set the total travel time of the wavepacket.
+    @time.setter
+    def time(self, T):
+        self._ts = None
 
-        Parameters:
-        T : float or (float, float)
-          If T is a tuple, it sets the lower and upper limits of the
-          time interval.
-
-        """
-
-        self.__time = None
         if T is None:
-            self.__period = None
+            self._tlim = None
             return
 
         if not isinstance(T, tuple):
-            self.__period = (0, T)
+            self._tlim = (0, T)
         else:
-            self.__period = T
+            for i in range(0, 2):
+                if not isinstance(T[i], (int, float)):
+                    err = 'The limits of for the time should be numbers.'
+                self._tlim = (T[0], [0])
 
-        if self.fs is not None:
-            self.dt = 1/self.fs
-            self.__time = np.arange(self.__period[0],
-                                    self.__period[1], self.dt)
+    @property
+    def dispersion(self):
+        """a listof the dispersion relationships"""
+        return self._disprel
 
-    def set_dispersion(self, disprels):
-        """Set the dispersion relationships of the wavepacket.
-
-        Changes the dispersion relationships of the object to new
-        ones.
-
-        Parameters:
-        disprels : function or list of functions
-            Each function should take one argument only, which is the
-            frequency in hertz and return the wavenumber in [1/m].
-        """
-
-        # Put in a list if it is not a list
-        if not isinstance(disprels, Iterable):
-            disprels = [disprels]
-
-        # Check if elements are collables
-        for d in disprels:
-            if not callable(d):
-                err = '`disprel` should be a callable object, e.g., a function of 1 \
-argument, or a list of such elements.'
-                raise TypeError(err)
-
-        self.__disprel = disprels
-
-    def set_spectrum(self, freq):
-        """Set the frequency spectrum of the wavepacket.
-
-        Changes the frequency spectrum of the object to new values.
-
-        Parameters:
-        freqs : number or list of numbers (int or float)
-            The frequencies of the wavepacket in [Hz].  A None
-            anywhere in the list will reset the whole spectrum to empty.
-
-        """
-
-        if isinstance(freq, Iterable):
-            for f in freq:
-                self.set_spectrum(f)
+    @dispersion.setter
+    def dispersion(self, disprels):
+        self._disprel = []
+        if isinstance(disprels, Iterable):
+            for fun in disprels:
+                if not callable(fun):
+                    err = '`disprel` should be a callable object, e.g., \
+a function of 1 argument, or a list of such elements.'
+                    raise TypeError(err)
+                else:
+                    self._disprel.append(fun)
             return
 
-        if freq is None:
-            self.__spectrum = []
+        elif disprels is None:
+            err = 'at least one dispersion relationship is need'
+            raise ValueError(err)
+
+        else:
+            # Try again
+            self.dispersion = [disprels]
+
+    @property
+    def spectrum(self):
+        """the frequency spectrum as a list of values in hertz"""
+        return self._freq_spectrum
+
+    @spectrum.setter
+    def spectrum(self, freqs):
+        self._freq_spectrum = []
+        if isinstance(freqs, Iterable):
+            for f in freqs:
+                if not isinstance(f, (int, float)):
+                    err = '`freqs` should be a number or an iterable, e.g. \
+a list, containing the frequency spectrum of the wave packet.'
+                    raise TypeError(err)
+                else:
+                    self._freq_spectrum.append(f)
             return
 
-        if not isinstance(freq, (int, float)):
-            err = '`freqs` should be a number or an iterable, \
-e.g. a list, containing the frequency spectrum of the wave packet.'
-            raise TypeError(err)
+        elif freqs is None:
+            return
 
-        self.__spectrum.append(freq)
+        else:
+            # Try again
+            self.spectrum = [freqs]
 
-    def set_envelope(self, envelope):
-        """Set the envelope of the resulting vibration.
+    @property
+    def envelope(self):
+        """the function that generates the envelope"""
+        return self._envelope_func
 
-        Parameters:
-        envelope : function of one parameter
-            The input is the poistion `x` and the output is a factor
-            that will be multiplied to the amplitude of the vibration
-            at position `x`.
-        """
+    @envelope.setter
+    def envelope(self, func):
+        self._envelope_func = None
 
-        if not callable(envelope):
+        if func is None:
+            return
+
+        elif not callable(func):
             err = '`envelope` should be a function of one paramenter.'
             raise ValueError(err)
 
-        self.__envelope = envelope
-
-        # Try discretizing the envelope
-        xs = self.get_space()
-        if xs is not None:
-            f = np.vectorize(envelope)
-            self.__envelope = f(xs)
+        else:
+            self._envelope_func = func
+            return
 
     def get_time(self):
         """Return the discretized time domain."""
 
-        return self.__time
+        if self.dt is None or self.time is None:
+            err = 'Either `fs` or `time` are not set.'
+            raise ValueError(err)
+
+        # Return stored values
+        t1, t2 = self.time
+
+        # Check with current properties
+        if self._ts is not None:
+            if (self.dt == self._ts[1] - self._ts[0] and
+                self._ts[0] == t1 and
+                self._ts[-1] == t2):
+                return self._ts
+
+        # If check fails, re-evaluate
+        self._ts = np.arange(t1, t2, self.dt)
+        return self._ts
 
     def get_space(self):
         """Return the discretized space domain."""
 
-        return self.__space
+        if self.dx is None or self.domain is None:
+            err = 'Either `dx` or `domain` are not set.'
+            raise ValueError(err)
+
+        # Retrive stored values
+        x1, x2 = self.domain
+
+        # Check with current properties
+        if self._xs is not None:
+            if (self.dx == self._xs[1] - self._xs[0] and
+                self._xs[0] == x1 and
+                self._xs[-1] == x2):
+                return self._xs
+
+        # If check fails, re-evaluate
+        self._xs = np.arange(x1, x2, self.dx)
+        return self._xs
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values.
@@ -250,37 +282,44 @@ e.g. a list, containing the frequency spectrum of the wave packet.'
         if self.fs is None:
             err = 'the sampling frequency `fs` is not set.'
             raise ValueError(err)
-        if self.__time is None:
-            err = 'the time interval is not set. use set_time()'
+        if self.time is None:
+            err = '`time` is not set.'
             raise ValueError(err)
+        else:
+            self.get_time()
         if self.dx is None:
             err = 'the spatial pace `dx` is not set.'
             raise ValueError(err)
-        if self.__space is None:
+        if self.domain is None:
             err = 'the spatial domain is not set. use set_space()'
             raise ValueError(err)
+        else:
+            self.get_space()
 
-        # Check envelope one last time
-        if self.__envelope is not None:
-            if callable(self.__envelope):
-                self.set_envelope(self.__envelope)
+
+        # Discretize envelope
+        if callable(self.envelope):
+            f = np.vectorize(self.envelope)
+            self._envelope = f(self.get_space())
+        else:
+            self._envelope = None
 
         self.__data = 0
-        for f in self.__spectrum:
-            for d in self.__disprel:
-                self.__data += base.complex_wave(d, f, self.__space,
-                                                 self.__time)
+        for f in self._freq_spectrum:
+            for d in self._disprel:
+                self.__data += base.complex_wave(d, f, self._xs,
+                                                 self._ts)
 
         # Normalizing
-        if self.__normalize_flag:
+        if self.normalize:
             max_abs = np.max(np.abs(self.__data))
             if max_abs >= 1e-24:
                 self.__data /= max_abs
 
         # Apply envelope
-        if self.__envelope is not None:
+        if self._envelope is not None:
             for i in range(0, self.__data.shape[0]):
-                self.__data[i,:] *= self.__envelope
+                self.__data[i,:] *= self._envelope
 
     def merge(self, wp):
         """Merge spectrum and disperion relationships of a wavepackets.
@@ -298,5 +337,5 @@ e.g. a list, containing the frequency spectrum of the wave packet.'
             err = 'the arguments should be `Wavepacket` instances.'
             raise TypeError(err)
 
-        self.__spectrum.extend(wp.__spectrum)
+        self._freq_spectrum.extend(wp._freq_spectrum)
         self.__disprel.extend(wp.__disprel)
