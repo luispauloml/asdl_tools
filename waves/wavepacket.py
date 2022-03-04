@@ -298,13 +298,6 @@ a list, containing the frequency spectrum of the wave packet.'
         else:
             self.get_space()
 
-        # Discretize envelope
-        if callable(self.envelope):
-            f = np.vectorize(self.envelope)
-            self._envelope = f(self.get_space())
-        else:
-            self._envelope = None
-
         data = 0
         for f in self._freq_spectrum:
             for d in self._disprel:
@@ -319,9 +312,12 @@ a list, containing the frequency spectrum of the wave packet.'
                 data /= max_abs
 
         # Apply envelope
-        if self._envelope is not None:
+        if callable(self.envelope):
+            f = np.vectorize(self.envelope)
+            envelope = f(self.get_space())
             for i in range(0, data.shape[0]):
-                data[i,:] *= self._envelope
+                data[i,:] *= envelope
+
         self._data['ys'] = data
 
     def merge(self, wp):
