@@ -310,22 +310,3 @@ a list, containing the frequency spectrum of the wave packet.'
                 data[i,:] *= envelope
 
         self._data['ys'] = data
-
-    def merge(self, wp):
-        """Merge spectrum and disperion relationships of a wavepackets.
-
-        The frequency sepctrum and dispersion relationship of a
-        wavepacket are added to current object.  Data, however, is not
-        merged, and should be recalculated after merge.
-
-        Parameters: wp : Wavepacket
-            The wavepacket whose spectrum and disperion relationships
-            will be added to current one.
-        """
-
-        if not isinstance(wp, wavepacket):
-            err = 'the arguments should be `Wavepacket` instances.'
-            raise TypeError(err)
-
-        self._freq_spectrum.extend(wp._freq_spectrum)
-        self.__disprel.extend(wp.__disprel)
