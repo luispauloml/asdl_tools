@@ -86,6 +86,22 @@ class Wavepacket:
         else:
             self.dt = 1/fs
 
+    def _set_tuple_value(self, field, discretized_field, value, err):
+        dict_ = self.__dict__
+        dict_[discretized_field] = None
+
+        if value is None:
+            dict_[field] = None
+            return
+
+        if not isinstance(value, tuple):
+            self._set_tuple_value(field, discretized_field, (0, value), err)
+        else:
+            for i in range(0, 2):
+                if not isinstance(value[i], (int, float)):
+                    raise ValueError(err)
+            dict_[field] = (value[0], value[1])
+
     @property
     def domain(self):
         """the limits of the space domain"""
@@ -93,19 +109,8 @@ class Wavepacket:
 
     @domain.setter
     def domain(self, L):
-        self._xs = None
-
-        if L is None:
-            self._xlim = None
-            return
-
-        if not isinstance(L, tuple):
-            self.domain = (0, L)
-        else:
-            for i in range(0, 2):
-                if not isinstance(L[i], (int, float)):
-                    err = 'The limits of the domain should be numbers.'
-            self._xlim = (L[0], L[1])
+        err = 'The limits of the domain should be numbers.'
+        self._set_tuple_value('_xlim', '_xs', L, err)
 
     @property
     def time(self):
@@ -114,19 +119,25 @@ class Wavepacket:
 
     @time.setter
     def time(self, T):
-        self._ts = None
+        err = 'The limits of for the time should be numbers.'
+        self._set_tuple_value('_tlim', '_ts', T, err)
 
-        if T is None:
-            self._tlim = None
+    def _set_list_value(self, field, values, predicate, err, if_none):
+        dict_ = self.__dict__
+        dict_[field] = []
+        if isinstance(values, Iterable):
+            for v in values:
+                if not predicate(v):
+                    raise TypeError(err)
+                else:
+                    dict_[field].append(v)
             return
 
-        if not isinstance(T, tuple):
-            self._tlim = (0, T)
+        elif values is None:
+            if_none()
+
         else:
-            for i in range(0, 2):
-                if not isinstance(T[i], (int, float)):
-                    err = 'The limits of for the time should be numbers.'
-                self._tlim = (T[0], [0])
+            self._set_list_value(field, [values], predicate, err, if_none)
 
     @property
     def dispersion(self):
@@ -135,24 +146,16 @@ class Wavepacket:
 
     @dispersion.setter
     def dispersion(self, disprels):
-        self._disprel = []
-        if isinstance(disprels, Iterable):
-            for fun in disprels:
-                if not callable(fun):
-                    err = '`disprel` should be a callable object, e.g., \
+        predicate = lambda f: callable(f)
+        err = '`disprel` should be a callable object, e.g., \
 a function of 1 argument, or a list of such elements.'
-                    raise TypeError(err)
-                else:
-                    self._disprel.append(fun)
-            return
 
-        elif disprels is None:
+        def err_if_none():
             err = 'at least one dispersion relationship is need'
             raise ValueError(err)
 
-        else:
-            # Try again
-            self.dispersion = [disprels]
+        self._set_list_value('_disprel', disprels, predicate,
+                             err, err_if_none)
 
     @property
     def spectrum(self):
@@ -161,23 +164,13 @@ a function of 1 argument, or a list of such elements.'
 
     @spectrum.setter
     def spectrum(self, freqs):
-        self._freq_spectrum = []
-        if isinstance(freqs, Iterable):
-            for f in freqs:
-                if not isinstance(f, (int, float)):
-                    err = '`freqs` should be a number or an iterable, e.g. \
+        predicate = lambda f: isinstance(f, (int, float))
+        err = '`freqs` should be a number or an iterable, e.g. \
 a list, containing the frequency spectrum of the wave packet.'
-                    raise TypeError(err)
-                else:
-                    self._freq_spectrum.append(f)
-            return
+        err_if_none = lambda : None
 
-        elif freqs is None:
-            return
-
-        else:
-            # Try again
-            self.spectrum = [freqs]
+        self._set_list_value('_freq_spectrum', freqs, predicate,
+                             err, err_if_none)
 
     @property
     def envelope(self):
@@ -199,47 +192,45 @@ a list, containing the frequency spectrum of the wave packet.'
             self._envelope_func = func
             return
 
-    def get_time(self):
-        """Return the discretized time domain."""
+    def _get_time_or_space(self, flag):
+        if flag == 'time':
+            step, lims = self.dt, self.time
+            field, err = 'ts', 'Either `fs` or `time` are not set.'
+        elif flag == 'space':
+            step, lims = self.dx, self.domain
+            field, err = 'xs', 'Either `dx` or `domain` are not set.'
+        else:
+            raise ValueError('something went wrong')
 
-        if self.dt is None or self.time is None:
-            err = 'Either `fs` or `time` are not set.'
+        if step is None or lims is None:
             raise ValueError(err)
 
         # Return stored values
-        t1, t2 = self.time
+        v1, v2 = lims
+
+        if flag == 'time':
+            values = self._ts
+        else:
+            values = self._xs
 
         # Check with current properties
-        if self._ts is not None:
-            if (self.dt == self._ts[1] - self._ts[0] and
-                self._ts[0] == t1 and
-                self._ts[-1] == t2):
-                return self._data['ts']
+        if values is not None:
+            if (step == values[1] - values[0] and
+                values[0] == t1 and
+                values[-1] == t2):
+                return self._data[field]
 
         # If check fails, re-evaluate
-        self._data['ts'] = np.arange(t1, t2, self.dt)
-        return self._data['ts']
+        self._data[field] = np.arange(v1, v2, step)
+        return self._data[field]
+
+    def get_time(self):
+        """Return the discretized time domain."""
+        return self._get_time_or_space('time')
 
     def get_space(self):
         """Return the discretized space domain."""
-
-        if self.dx is None or self.domain is None:
-            err = 'Either `dx` or `domain` are not set.'
-            raise ValueError(err)
-
-        # Retrive stored values
-        x1, x2 = self.domain
-
-        # Check with current properties
-        if self._xs is not None:
-            if (self.dx == self._xs[1] - self._xs[0] and
-                self._xs[0] == x1 and
-                self._xs[-1] == x2):
-                return self._data['xs']
-
-        # If check fails, re-evaluate
-        self._data['xs'] = np.arange(x1, x2, self.dx)
-        return self._data['xs']
+        return self._get_time_or_space('space')
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values.
