@@ -48,8 +48,10 @@ class Wavepacket:
         self.fs = fs            # Sampling frequency
         self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
-        self.__data = None      # Store data
-        self.envelope = envelope # Envelope
+        self.envelope = envelope   # Envelope
+        self._data = {'xs': None,  # Space discretization
+                      'ts': None,  # Time discretization
+                      'ys': None}  # Result
 
         self.time = T
         self.domain = L
@@ -212,11 +214,11 @@ a list, containing the frequency spectrum of the wave packet.'
             if (self.dt == self._ts[1] - self._ts[0] and
                 self._ts[0] == t1 and
                 self._ts[-1] == t2):
-                return self._ts
+                return self._data['ts']
 
         # If check fails, re-evaluate
-        self._ts = np.arange(t1, t2, self.dt)
-        return self._ts
+        self._data['ts'] = np.arange(t1, t2, self.dt)
+        return self._data['ts']
 
     def get_space(self):
         """Return the discretized space domain."""
@@ -233,11 +235,11 @@ a list, containing the frequency spectrum of the wave packet.'
             if (self.dx == self._xs[1] - self._xs[0] and
                 self._xs[0] == x1 and
                 self._xs[-1] == x2):
-                return self._xs
+                return self._data['xs']
 
         # If check fails, re-evaluate
-        self._xs = np.arange(x1, x2, self.dx)
-        return self._xs
+        self._data['xs'] = np.arange(x1, x2, self.dx)
+        return self._data['xs']
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values.
@@ -253,10 +255,10 @@ a list, containing the frequency spectrum of the wave packet.'
         `eval` with be run.
         """
 
-        if self.__data is None:
+        if self._data['ys'] is None:
             self.eval()
 
-        return self.__data
+        return self._data['ys']
 
     def get_data(self):
         """Return the time history of the wavepacket.
@@ -272,8 +274,8 @@ a list, containing the frequency spectrum of the wave packet.'
     def purge_data(self):
         """Delete the evaluated data stored in the object."""
 
-        del(self.__data)
-        self.__data = None
+        del(self._data)
+        self._data = {'xs': None, 'ts': None, 'ys': None}
 
     def eval(self):
         """Evaluate the wavepacket."""
@@ -296,7 +298,6 @@ a list, containing the frequency spectrum of the wave packet.'
         else:
             self.get_space()
 
-
         # Discretize envelope
         if callable(self.envelope):
             f = np.vectorize(self.envelope)
@@ -304,22 +305,24 @@ a list, containing the frequency spectrum of the wave packet.'
         else:
             self._envelope = None
 
-        self.__data = 0
+        data = 0
         for f in self._freq_spectrum:
             for d in self._disprel:
-                self.__data += base.complex_wave(d, f, self._xs,
-                                                 self._ts)
+                data += base.complex_wave(d, f,
+                                          self._data['xs'],
+                                          self._data['ts'])
 
         # Normalizing
         if self.normalize:
-            max_abs = np.max(np.abs(self.__data))
+            max_abs = np.max(np.abs(data))
             if max_abs >= 1e-24:
-                self.__data /= max_abs
+                data /= max_abs
 
         # Apply envelope
         if self._envelope is not None:
-            for i in range(0, self.__data.shape[0]):
-                self.__data[i,:] *= self._envelope
+            for i in range(0, data.shape[0]):
+                data[i,:] *= self._envelope
+        self._data['ys'] = data
 
     def merge(self, wp):
         """Merge spectrum and disperion relationships of a wavepackets.
