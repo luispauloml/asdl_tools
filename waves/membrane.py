@@ -74,8 +74,8 @@ class Membrane(BaseWave):
         self.__Ly = 2 * self.ys[-1]
 
         # Verify sources
-        self.__sources = []
-        self.__reflected_sources = []
+        self._sources = []
+        self._reflected_sources = []
         if sources is not None:
             if not isinstance(sources, Iterable):
                 raise ValueError('Membrane: sources should be a list or None')
@@ -122,14 +122,14 @@ should have a `Wavepacket` object in the first position')
             raise ValueError('Membrane: tuples describing the source \
 should have a tuple (float, float) in the second position')
 
-        self.__add_source_to_list(source, pos, reflected = False)
+        self._add_source_to_list(source, pos, reflected = False)
 
         # Check boundary condition
         if self.boundary == 'transparent':
             return
         elif self.boundary == 'free' or isinstance(self.boundary, int):
             # Fist iteration
-            reflected_positions = self.__reflect_position(pos)
+            reflected_positions = self._reflect_position(pos)
 
             # Additional iterations
             if isinstance(self.boundary, int):
@@ -138,16 +138,16 @@ should have a tuple (float, float) in the second position')
 
                 for k in range(0, self.boundary - 1):
                     for p in tmp1:
-                        tmp2 += self.__reflect_position(p)
+                        tmp2 += self._reflect_position(p)
 
                     reflected_positions += tmp2
                     tmp1, tmp2 = tmp2, []
 
             # Adding to the membrane
             for p in reflected_positions:
-                self.__add_source_to_list(source, p, reflected = True)
+                self._add_source_to_list(source, p, reflected = True)
 
-    def __add_source_to_list(self, source, pos, reflected = False):
+    def _add_source_to_list(self, source, pos, reflected = False):
         """Add a real or a reflected source."""
 
         # To reduce computing time we set the domain of the source
@@ -181,11 +181,11 @@ should have a tuple (float, float) in the second position')
         source.time = self.time
 
         if reflected:
-            self.__reflected_sources.append((source, pos, dist))
+            self._reflected_sources.append((source, pos, dist))
         else:
-            self.__sources.append((source, pos, dist))
+            self._sources.append((source, pos, dist))
 
-    def __reflect_position(self, pos):
+    def _reflect_position(self, pos):
         """Check the region in which the source is located."""
 
         # Notation:
@@ -266,7 +266,7 @@ should not have been reached.')
                          self.__time.size),
                         dtype = np.float32)
 
-        for src, pos, dist in (self.__sources + self.__reflected_sources):
+        for src, pos, dist in (self._sources + self._reflected_sources):
             src.eval()
             src_data = src.get_data()
             src_domain = src.get_space()
