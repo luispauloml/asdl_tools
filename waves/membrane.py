@@ -58,10 +58,7 @@ class Membrane(BaseWave):
             self.__Ly = size[1]     # Length in y direction
 
         # Discretizing the domain
-        self.__time = np.arange(self.time[0],
-                                self.time[1],
-                                1/fs,
-                                dtype = np.float32)
+        self.get_time()
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
         xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx,
@@ -268,7 +265,7 @@ should not have been reached.')
 
         data = np.zeros((self.xs.size,
                          self.ys.size,
-                         self.__time.size),
+                         self.get_time().size),
                         dtype = np.float32)
 
         for src, pos, dist in (self._sources + self._reflected_sources):

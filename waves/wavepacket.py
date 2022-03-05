@@ -110,41 +110,9 @@ a list, containing the frequency spectrum of the wave packet.'
             self._envelope_func = func
             return
 
-    def _get_time_or_space(self, flag):
-        if flag == 'time':
-            step, lims = self.dt, self.time
-            field, err = 'time', 'Either `fs` or `time` are not set.'
-        elif flag == 'space':
-            step, lims = self.dx, self.domain
-            field, err = 'domain', 'Either `dx` or `domain` are not set.'
-        else:
-            raise ValueError('something went wrong')
-
-        if step is None or lims is None:
-            raise ValueError(err)
-
-        # Return stored values
-        v1, v2 = lims
-        values = self._data[field]
-
-        # Check with current properties
-        if values is not None:
-            if (step == values[1] - values[0] and
-                values[0] == v1 and
-                values[-1] == v2):
-                return self._data[field]
-
-        # If check fails, re-evaluate
-        self._data[field] = np.arange(v1, v2, step)
-        return self._data[field]
-
-    def get_time(self):
-        """Return the discretized time domain."""
-        return self._get_time_or_space('time')
-
     def get_space(self):
         """Return the discretized space domain."""
-        return self._get_time_or_space('space')
+        return BaseWave._get_time_or_space(self, 'space')
 
     def get_complex_data(self):
         """Return the actual data for the wavepacket in complex values.
