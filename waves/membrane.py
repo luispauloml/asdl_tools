@@ -2,9 +2,10 @@ import copy
 import numpy as np
 import waves.base as base
 import waves.wavepacket as wp
+from waves.BaseWave import BaseWave
 from collections.abc import Iterable
 
-class Membrane:
+class Membrane(BaseWave):
     """A class for creating finite vibrating membranes.
 
     Parameters:
@@ -43,8 +44,10 @@ class Membrane:
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
-        self.__data = None      # Store data
+        self.time = T
+        self._data = BaseWave()._data
         self.__boundary = boundary
+        self.normalize = normalize
 
         # Describing the domain
         if not isinstance(size, tuple):
@@ -52,34 +55,23 @@ class Membrane:
         else:
             self.__Lx = size[0]     # Length in x direction
             self.__Ly = size[1]     # Length in y direction
-        if not isinstance(T, tuple):
-            self.__period = (0, T)
-        else:
-            self.__period = T
 
         # Discretizing the domain
-        self.__time = np.arange(self.__period[0],
-                                self.__period[1],
+        self.__time = np.arange(self.time[0],
+                                self.time[1],
                                 1/fs,
                                 dtype = np.float32)
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
-        self.__xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx,
-                                              dtype = np.float32))
-        self.__ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx,
-                                              dtype = np.float32))
-        self.__grid = np.meshgrid(self.__xs, self.__ys)
+        xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx,
+                                       dtype = np.float32))
+        ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx,
+                                       dtype = np.float32))
+        self._data['domain'] = np.meshgrid(xs, ys)
 
         # Update Lx and Ly
-        self.__Lx = 2 * self.__xs[-1]
-        self.__Ly = 2 * self.__ys[-1]
-
-        # Flag for data normalization
-        # Use if statement to garantee that `normalize` becomes bool
-        if normalize:
-            self.__normalize_flag = True
-        else:
-            self.__normalize_flag = False
+        self.__Lx = 2 * self.xs[-1]
+        self.__Ly = 2 * self.ys[-1]
 
         # Verify sources
         self.__sources = []
@@ -90,6 +82,14 @@ class Membrane:
             else:
                 for src, pos in sources:
                     self.add_source(src, pos)
+
+    @property
+    def xs(self):
+        return self._data['domain'][0][:,0]
+
+    @property
+    def ys(self):
+        return self._data['domain'][1][0,:]
 
     def add_source(self, source, pos):
         """Add a source to the membrane.
@@ -147,14 +147,14 @@ should have a tuple (float, float) in the second position')
         # distance from a point (x, y) to the position of the source.
 
         # Calculate maximum distance
-        dx = self.__grid[0] - pos[0]
-        dy = self.__grid[1] - pos[1]
+        dx = self._data['domain'][0] - pos[0]
+        dy = self._data['domain'][1] - pos[1]
         dist = np.sqrt(dx ** 2 + dy ** 2)
         d_max = np.max(dist)
 
         # Check if `pos` is inside the domain of the membrane
-        if self.__xs[0] <= pos[0] <= self.__xs[-1] \
-           and self.__ys[0] <= pos[1] <= self.__ys[-1]:
+        if self.xs[0] <= pos[0] <= self.xs[-1] \
+           and self.ys[0] <= pos[1] <= self.ys[-1]:
             d_min = 0
         else:
             d_min = np.min(dist)
@@ -164,7 +164,7 @@ should have a tuple (float, float) in the second position')
         source.dx = self.dx
         source.fs = self.fs
         source.domain = (d_min, d_max)
-        source.time = self.__period
+        source.time = self.time
 
         if reflected:
             self.__reflected_sources.append((source, pos, dist))
@@ -244,56 +244,11 @@ should not have been reached.')
 
         return reflections
 
-    def __getPos(self, coord, shape):
-        """Return the position vector or matrix."""
-
-        if coord not in ['x', 'y']:
-            raise ValueError("`coord` should be either 'x' or 'y'")
-        if shape not in ['vector', 'grid']:
-            raise ValueError("`shape` should be either 'vector' or \
-'grid'")
-        if coord == 'x':
-            if coord == 'vector':
-                return self.__xs
-            else:
-                return self.__grid[0]
-        else:
-            if coord == 'vector':
-                return self.__ys
-            else:
-                return self.__grid[1]
-
-    def getX(self, shape = 'grid'):
-        """Return a 2-D matrix with the x coordinates of memebrane.
-
-        Parameters:
-        shape : string, optional, default: 'grid'
-            If `shape` is 'vector' a vector is returned,
-            otherwise, a 2-D matrix is return.
-
-        """
-
-        return self.__getPos('x', shape)
-
-        return self.__grid[0]
-
-    def getY(self, fomart = 'grid'):
-        """Return a 2-D matrix with the y coordinates of memebrane.
-
-        Parameters:
-        shape : string, optional, default: 'grid'
-            If `shape` is 'vector' a vector is returned,
-            otherwise, a 2-D matrix is return.
-
-        """
-
-        return self.__getPos('y', shape)
-
     def eval(self):
         """Evaluate the displacement of the memebrane."""
 
-        data = np.zeros((self.__xs.size,
-                         self.__ys.size,
+        data = np.zeros((self.xs.size,
+                         self.ys.size,
                          self.__time.size),
                         dtype = np.float32)
 
@@ -307,12 +262,12 @@ should not have been reached.')
             src.purge_data()
 
         # Normalizing
-        if self.__normalize_flag:
+        if self.normalize:
             max_abs = np.max(np.abs(data))
             if max_abs >= 1e-24:
                 data /= max_abs
 
-        self.__data = data
+        self._data['results'] = data
 
     def get_data(self):
         """Returns the time history of the membrane.
@@ -331,10 +286,4 @@ should not have been reached.')
         `getY` methods.
         """
 
-        return self.__data
-
-    def purge_data(self):
-        """Delete the eavluated data stored in the object."""
-
-        del(self.__data)
-        self.__data = None
+        return self._data['results']
