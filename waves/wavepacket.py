@@ -1,10 +1,10 @@
 from numpy import pi
-from collections.abc import Iterable
 import numbers
 import numpy as np
 import waves.base as base
+from waves.BaseWave import BaseWave
 
-class Wavepacket:
+class Wavepacket(BaseWave):
     """A class for creating wavepackets in 1D domains.
 
     The class simulates a wavepacket in a 1D domain given the
@@ -45,103 +45,15 @@ class Wavepacket:
 
     def __init__(self, disprel, dx = None, L = None, fs = None, \
                  T = None, freq = None, normalize = True, envelope = None):
-        # Parameters for discretization
+        self._data = BaseWave()._data
         self.fs = fs            # Sampling frequency
         self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
         self.envelope = envelope   # Envelope
-        self._data = {'xs': None,  # Space discretization
-                      'ts': None,  # Time discretization
-                      'ys': None}  # Result
-
         self.time = T
         self.domain = L
         self.dispersion = disprel
         self.normalize = normalize
-
-    @property
-    def normalize(self):
-        """flag for noramlization of values"""
-        return self._normalize_flag
-
-    @normalize.setter
-    def normalize(self, flag):
-        # Use if statement to garantee that `normalize` becomes bool
-        if flag:
-            self._normalize_flag = True
-        else:
-            self._normalize_flag = False
-
-    @property
-    def fs(self):
-        """the sampling frequency"""
-        if self.dt is None:
-            return None
-        else:
-            return 1/self.dt
-
-    @fs.setter
-    def fs(self, fs):
-        if fs is None:
-            self.dt = None
-        elif isinstance(fs, numbers.Number):
-            self.dt = 1/fs
-        else:
-            err = 'the sampling frequency should be a number.'
-            raise ValueError(err)
-
-    def _set_tuple_value(self, field, discretized_field, value, err):
-        dict_ = self.__dict__
-        dict_[discretized_field] = None
-
-        if value is None:
-            dict_[field] = None
-            return
-
-        if not isinstance(value, tuple):
-            self._set_tuple_value(field, discretized_field, (0, value), err)
-        else:
-            for i in range(0, 2):
-                if not isinstance(value[i], numbers.Number):
-                    raise ValueError(err)
-            dict_[field] = (value[0], value[1])
-
-    @property
-    def domain(self):
-        """the limits of the space domain"""
-        return self._xlim
-
-    @domain.setter
-    def domain(self, L):
-        err = 'The limits of the domain should be numbers.'
-        self._set_tuple_value('_xlim', '_xs', L, err)
-
-    @property
-    def time(self):
-        """the limits of the time domain"""
-        return self._tlim
-
-    @time.setter
-    def time(self, T):
-        err = 'The limits of for the time should be numbers.'
-        self._set_tuple_value('_tlim', '_ts', T, err)
-
-    def _set_list_value(self, field, values, predicate, err, if_none):
-        dict_ = self.__dict__
-        dict_[field] = []
-        if isinstance(values, Iterable):
-            for v in values:
-                if not predicate(v):
-                    raise TypeError(err)
-                else:
-                    dict_[field].append(v)
-            return
-
-        elif values is None:
-            if_none()
-
-        else:
-            self._set_list_value(field, [values], predicate, err, if_none)
 
     @property
     def dispersion(self):
@@ -158,8 +70,9 @@ a function of 1 argument, or a list of such elements.'
             err = 'at least one dispersion relationship is need'
             raise ValueError(err)
 
-        self._set_list_value('_disprel', disprels, predicate,
-                             err, err_if_none)
+        BaseWave._set_list_value(self,'_disprel',
+                                 disprels, predicate,
+                                 err, err_if_none)
 
     @property
     def spectrum(self):
@@ -173,8 +86,9 @@ a function of 1 argument, or a list of such elements.'
 a list, containing the frequency spectrum of the wave packet.'
         err_if_none = lambda : None
 
-        self._set_list_value('_freq_spectrum', freqs, predicate,
-                             err, err_if_none)
+        BaseWave._set_list_value(self, '_freq_spectrum',
+                                 freqs, predicate,
+                                 err, err_if_none)
 
     @property
     def envelope(self):
@@ -199,10 +113,10 @@ a list, containing the frequency spectrum of the wave packet.'
     def _get_time_or_space(self, flag):
         if flag == 'time':
             step, lims = self.dt, self.time
-            field, err = 'ts', 'Either `fs` or `time` are not set.'
+            field, err = 'time', 'Either `fs` or `time` are not set.'
         elif flag == 'space':
             step, lims = self.dx, self.domain
-            field, err = 'xs', 'Either `dx` or `domain` are not set.'
+            field, err = 'domain', 'Either `dx` or `domain` are not set.'
         else:
             raise ValueError('something went wrong')
 
@@ -211,17 +125,13 @@ a list, containing the frequency spectrum of the wave packet.'
 
         # Return stored values
         v1, v2 = lims
-
-        if flag == 'time':
-            values = self._ts
-        else:
-            values = self._xs
+        values = self._data[field]
 
         # Check with current properties
         if values is not None:
             if (step == values[1] - values[0] and
-                values[0] == t1 and
-                values[-1] == t2):
+                values[0] == v1 and
+                values[-1] == v2):
                 return self._data[field]
 
         # If check fails, re-evaluate
@@ -250,10 +160,10 @@ a list, containing the frequency spectrum of the wave packet.'
         `eval` with be run.
         """
 
-        if self._data['ys'] is None:
+        if self._data['results'] is None:
             self.eval()
 
-        return self._data['ys']
+        return self._data['results']
 
     def get_data(self):
         """Return the time history of the wavepacket.
@@ -265,12 +175,6 @@ a list, containing the frequency spectrum of the wave packet.'
         # To get 0 displacement at 0 time, we extract the sine part of
         # the data, which is its imaginary part
         return (-np.imag(self.get_complex_data()))
-
-    def purge_data(self):
-        """Delete the evaluated data stored in the object."""
-
-        del(self._data)
-        self._data = {'xs': None, 'ts': None, 'ys': None}
 
     def eval(self):
         """Evaluate the wavepacket."""
@@ -297,8 +201,8 @@ a list, containing the frequency spectrum of the wave packet.'
         for f in self._freq_spectrum:
             for d in self._disprel:
                 data += base.complex_wave(d, f,
-                                          self._data['xs'],
-                                          self._data['ts'])
+                                          self._data['domain'],
+                                          self._data['time'])
 
         # Normalizing
         if self.normalize:
@@ -313,4 +217,4 @@ a list, containing the frequency spectrum of the wave packet.'
             for i in range(0, data.shape[0]):
                 data[i,:] *= envelope
 
-        self._data['ys'] = data
+        self._data['results'] = data
