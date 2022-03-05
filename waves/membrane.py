@@ -163,8 +163,8 @@ should have a tuple (float, float) in the second position')
         source.purge_data()
         source.dx = self.dx
         source.fs = self.fs
-        source.set_space((d_min, d_max))
-        source.set_time(self.__period)
+        source.domain = (d_min, d_max)
+        source.time = self.__period
 
         if reflected:
             self.__reflected_sources.append((source, pos, dist))
