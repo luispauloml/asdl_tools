@@ -46,7 +46,7 @@ class Membrane(BaseWave):
         self.dx = dx            # Spatial pace
         self.time = T
         self._data = BaseWave()._data
-        self.__boundary = boundary
+        self.boundary = boundary
         self.normalize = normalize
 
         # Describing the domain
@@ -91,6 +91,20 @@ class Membrane(BaseWave):
     def ys(self):
         return self._data['domain'][1][0,:]
 
+    @property
+    def boundary(self):
+        """the boundary conditions"""
+        return self._boundary
+
+    @boundary.setter
+    def boundary(self, value):
+        if (value in ('transparent', 'free') or
+            isinstance(value, int)):
+            self._boundary = value
+        else:
+            raise TypeError("the boundary conditions should be 'free', \
+'transparent' or a int value.")
+
     def add_source(self, source, pos):
         """Add a source to the membrane.
 
@@ -111,18 +125,18 @@ should have a tuple (float, float) in the second position')
         self.__add_source_to_list(source, pos, reflected = False)
 
         # Check boundary condition
-        if self.__boundary == 'transparent':
+        if self.boundary == 'transparent':
             return
-        elif self.__boundary == 'free' or isinstance(self.__boundary, int):
+        elif self.boundary == 'free' or isinstance(self.boundary, int):
             # Fist iteration
             reflected_positions = self.__reflect_position(pos)
 
             # Additional iterations
-            if isinstance(self.__boundary, int):
+            if isinstance(self.boundary, int):
                 tmp1 = copy.deepcopy(reflected_positions)
                 tmp2 = []
 
-                for k in range(0, self.__boundary - 1):
+                for k in range(0, self.boundary - 1):
                     for p in tmp1:
                         tmp2 += self.__reflect_position(p)
 
