@@ -1,4 +1,5 @@
 import copy
+import numbers
 import numpy as np
 import waves.base as base
 import waves.wavepacket as wp
@@ -78,7 +79,7 @@ class Membrane(BaseWave):
         self._reflected_sources = []
         if sources is not None:
             if not isinstance(sources, Iterable):
-                raise ValueError('Membrane: sources should be a list or None')
+                raise TypeError('Membrane: sources should be a list or None')
             else:
                 for src, pos in sources:
                     self.add_source(src, pos)
@@ -116,11 +117,15 @@ class Membrane(BaseWave):
         """
 
         if not isinstance(source, wp.Wavepacket):
-            raise ValueError('Membrane: tuples describing the source \
+            raise TypeError('Membrane: tuples describing the source \
 should have a `Wavepacket` object in the first position')
         if not isinstance(pos, tuple):
-            raise ValueError('Membrane: tuples describing the source \
-should have a tuple (float, float) in the second position')
+            raise TypeError('Membrane: tuples describing the source \
+should have a tuple (number, number) in the second position')
+        if ((not isinstance(pos[0], numbers.Number)) or
+            (not isinstance(pos[1], numbers.Number))):
+            raise TypeError('Membrane: the two elements of the \
+position should be numbers.')
 
         self._add_source_to_list(source, pos, reflected = False)
 

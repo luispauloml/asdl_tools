@@ -104,7 +104,7 @@ a list, containing the frequency spectrum of the wave packet.'
 
         elif not callable(func):
             err = '`envelope` should be a function of one paramenter.'
-            raise ValueError(err)
+            raise TypeError(err)
 
         else:
             self._envelope_func = func
@@ -179,23 +179,9 @@ a list, containing the frequency spectrum of the wave packet.'
     def eval(self):
         """Evaluate the wavepacket."""
 
-        # Check if all information is available
-        if self.fs is None:
-            err = 'the sampling frequency `fs` is not set.'
-            raise ValueError(err)
-        if self.time is None:
-            err = '`time` is not set.'
-            raise ValueError(err)
-        else:
-            self.get_time()
-        if self.dx is None:
-            err = 'the spatial pace `dx` is not set.'
-            raise ValueError(err)
-        if self.domain is None:
-            err = 'the spatial domain is not set. use set_space()'
-            raise ValueError(err)
-        else:
-            self.get_space()
+        # Rerun discretization
+        self.get_time()
+        self.get_space()
 
         data = 0
         for f in self._freq_spectrum:

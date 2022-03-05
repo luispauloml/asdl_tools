@@ -14,7 +14,7 @@ class BaseWave:
         elif isinstance(value, numbers.Number):
             dict_[field] = apply_to_value(value)
         else:
-            raise ValueError(err)
+            raise TypeError(err)
 
     @property
     def fs(self):
