@@ -46,30 +46,25 @@ class Membrane(BaseWave):
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.time = T
+        self.domain = size
         self._data = BaseWave()._data
         self.boundary = boundary
         self.normalize = normalize
 
         # Describing the domain
-        if not isinstance(size, tuple):
-            raise ValueError('Membrane: size should be a tuple of floats')
-        else:
-            self.__Lx = size[0]     # Length in x direction
-            self.__Ly = size[1]     # Length in y direction
+        Lx = self.domain[0][1]     # Length in x direction
+        Ly = self.domain[1][1]     # Length in y direction
 
         # Discretizing the domain
         self.get_time()
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
-        xs = flip_and_hstack(np.arange(0, self.__Lx/2, dx,
-                                       dtype = np.float32))
-        ys = flip_and_hstack(np.arange(0, self.__Ly/2, dx,
-                                       dtype = np.float32))
+        xs = flip_and_hstack(np.arange(0, Lx, dx, dtype = np.float32))
+        ys = flip_and_hstack(np.arange(0, Ly, dx, dtype = np.float32))
         self._data['domain'] = np.meshgrid(xs, ys)
 
-        # Update Lx and Ly
-        self.__Lx = 2 * self.xs[-1]
-        self.__Ly = 2 * self.ys[-1]
+        # Update domain
+        self.domain = (self.xs[-1]*2, self.ys[-1]*2)
 
         # Verify sources
         self._sources = []
@@ -82,12 +77,30 @@ class Membrane(BaseWave):
                     self.add_source(src, pos)
 
     @property
+    def domain(self):
+        """the limits of the memebrane"""
+        return self._xylims
+
+    @domain.setter
+    def domain(self, value):
+        err = TypeError('the size of the membrane shoulde be a tuple of \
+two numbers greater than 0.')
+
+        if not isinstance(value, tuple):
+            raise err
+
+        field = '_xylims'
+        pred = lambda x: isinstance(x, numbers.Number) and x > 0
+        f = lambda x: (-x/2, x/2)
+        BaseWave._set_tuple_value(self, field, value, pred, err, f)
+
+    @property
     def xs(self):
-        return self._data['domain'][0][:,0]
+        return self._data['domain'][0][0,:]
 
     @property
     def ys(self):
-        return self._data['domain'][1][0,:]
+        return self._data['domain'][1][:,0]
 
     @property
     def boundary(self):
@@ -204,7 +217,7 @@ position should be numbers.')
         #  7 | 6 | 5
 
         x, y = pos
-        Dx, Dy = self.__Lx/2, self.__Ly/2
+        Dx, Dy = self.domain[0][1], self.domain[1][1]
         new_coord = lambda b, p: 2 * b - p
         new_pos = lambda inds: \
             list(map(lambda i:

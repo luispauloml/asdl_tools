@@ -56,6 +56,18 @@ class Wavepacket(BaseWave):
         self.normalize = normalize
 
     @property
+    def domain(self):
+        """the limits of the space domain"""
+        return self._xlim
+
+    @domain.setter
+    def domain(self, L):
+        pred = lambda x: isinstance(x, numbers.Number)
+        err = 'The limits of the domain should be numbers.'
+        BaseWave._set_tuple_value(self, '_xlim', L, pred,
+                                  err, lambda x: x)
+
+    @property
     def dispersion(self):
         """a listof the dispersion relationships"""
         return self._disprel

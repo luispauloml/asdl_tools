@@ -48,31 +48,35 @@ class BaseWave:
             return worker
         self._set_scalar('_step', value, lambda x: x, if_none(self), err)
 
-    def _set_tuple_value(self, field, discretized_field, value, err):
+    def _set_tuple_value(self, field, value,
+                         predicate, err, apply_to_values):
         dict_ = self.__dict__
-        dict_[discretized_field] = None
 
         if value is None:
             dict_[field] = None
             return
 
         if not isinstance(value, tuple):
-            self._set_tuple_value(field, discretized_field, (0, value), err)
+            self._set_tuple_value(field, (0, value), predicate,
+                                  err, apply_to_values)
         else:
+            new_values = []
+            # Use range to guarantee that only two values will be accounted for
             for i in range(0, 2):
-                if not isinstance(value[i], numbers.Number):
-                    raise ValueError(err)
-            dict_[field] = (value[0], value[1])
+                if not predicate(value[i]):
+                    raise err
+                else:
+                    new_values.append(apply_to_values(value[i]))
+
+            dict_[field] = (new_values[0], new_values[1])
 
     @property
     def domain(self):
-        """the limits of the space domain"""
-        return self._xlim
+        raise NotImplementedError
 
     @domain.setter
     def domain(self, L):
-        err = 'The limits of the domain should be numbers.'
-        self._set_tuple_value('_xlim', '_xs', L, err)
+        raise NotImplementedError
 
     @property
     def time(self):
@@ -81,8 +85,9 @@ class BaseWave:
 
     @time.setter
     def time(self, T):
-        err = 'The limits of for the time should be numbers.'
-        self._set_tuple_value('_tlim', '_ts', T, err)
+        pred = lambda x: isinstance(x, numbers.Number)
+        err = TypeError('The limits of for the time should be numbers.')
+        self._set_tuple_value('_tlim', T, pred, err, lambda x: x)
 
     @property
     def normalize(self):
@@ -125,10 +130,10 @@ class BaseWave:
 
     def _get_time_or_space(self, flag):
         if flag == 'time':
-            step, lims = self.dt, self.time
+            step, lims = self.dt, '_tlim'
             field, err = 'time', 'Either `fs` or `time` are not set.'
         elif flag == 'space':
-            step, lims = self.dx, self.domain
+            step, lims = self.dx, '_xlim'
             field, err = 'domain', 'Either `dx` or `domain` are not set.'
         else:
             raise ValueError('something went wrong')
@@ -137,7 +142,7 @@ class BaseWave:
             raise ValueError(err)
 
         # Return stored values
-        v1, v2 = lims
+        v1, v2 = self.__dict__[lims]
         values = self._data[field]
 
         # Check with current properties
@@ -149,6 +154,7 @@ class BaseWave:
 
         # If check fails, re-evaluate
         self._data[field] = np.arange(v1, v2, step)
+        self.__dict__[lims] = (self._data[field][0], self._data[field][-1])
         return self._data[field]
 
     def get_time(self):
