@@ -1,5 +1,6 @@
 from numpy import pi
 from collections.abc import Iterable
+import numbers
 import numpy as np
 import waves.base as base
 
@@ -16,17 +17,17 @@ class Wavepacket:
         The dispersion relationships of the wavepacket.  Each function
         should take the frequency in hertz and return the wave number
         in [1/m].
-    dx : float, optional, default: None
+    dx : number, optional, default: None
         Spatial step in meters.
-    L : float or tuple of float, optional, default: None
+    L : number or (number, number), optional, default: None
         Length of the domain in [m].  If a tuple is provided, is
         defines the lower and upper limits of the domain.
-    fs : float, optional, default: None
+    fs : number, optional, default: None
         Sampling frequency in [Hz].
-    T : float or (float, float), optiona, default: None
+    T : number or (number, number), optiona, default: None
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
-    freqs : list of float, optional, default: None
+    freqs : list of numbers, optional, default: None
         The frequency spectrum of the wavepacket.  Each element should
         be a frequency in hertz.  If not given, the object cannot
         generate any data.
@@ -83,8 +84,11 @@ class Wavepacket:
     def fs(self, fs):
         if fs is None:
             self.dt = None
-        else:
+        elif isinstance(fs, numbers.Number):
             self.dt = 1/fs
+        else:
+            err = 'the sampling frequency should be a number.'
+            raise ValueError(err)
 
     def _set_tuple_value(self, field, discretized_field, value, err):
         dict_ = self.__dict__
@@ -98,7 +102,7 @@ class Wavepacket:
             self._set_tuple_value(field, discretized_field, (0, value), err)
         else:
             for i in range(0, 2):
-                if not isinstance(value[i], (int, float)):
+                if not isinstance(value[i], numbers.Number):
                     raise ValueError(err)
             dict_[field] = (value[0], value[1])
 
@@ -164,7 +168,7 @@ a function of 1 argument, or a list of such elements.'
 
     @spectrum.setter
     def spectrum(self, freqs):
-        predicate = lambda f: isinstance(f, (int, float))
+        predicate = lambda f: isinstance(f, numbers.Number)
         err = '`freqs` should be a number or an iterable, e.g. \
 a list, containing the frequency spectrum of the wave packet.'
         err_if_none = lambda : None
