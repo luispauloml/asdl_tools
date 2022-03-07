@@ -2,7 +2,7 @@ from numpy import pi
 import numbers
 import numpy as np
 import waves.base as base
-from waves.BaseWave import BaseWave
+from waves.base import BaseWave
 
 class Wavepacket(BaseWave):
     """A class for creating wavepackets in 1D domains.

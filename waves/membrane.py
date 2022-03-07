@@ -3,7 +3,7 @@ import numbers
 import numpy as np
 import waves.base as base
 import waves.wavepacket as wp
-from waves.BaseWave import BaseWave
+from waves.base import BaseWave
 from collections.abc import Iterable
 
 class Membrane(BaseWave):
