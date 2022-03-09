@@ -147,20 +147,20 @@ class BaseWave:
             dict_[field] = (new_values[0], new_values[1])
 
     @property
-    def domain(self):
+    def space_boundary(self):
         raise NotImplementedError
 
-    @domain.setter
-    def domain(self, L):
+    @space_boundary.setter
+    def space_boundary(self, L):
         raise NotImplementedError
 
     @property
-    def time(self):
+    def time_boundary(self):
         """the limits of the time domain"""
         return self._tlim
 
-    @time.setter
-    def time(self, T):
+    @time_boundary.setter
+    def time_boundary(self, T):
         pred = lambda x: isinstance(x, numbers.Number)
         err = TypeError('The limits of for the time should be numbers.')
         self._set_tuple_value('_tlim', T, pred, err, lambda x: x)
@@ -198,6 +198,11 @@ class BaseWave:
     def eval(self):
         raise NotImplementedError
 
+    @property
+    def data(self):
+        """the data evaluated in this object"""
+        raise NotImplementedError
+
     def purge_data(self):
         """Delete the evaluated data stored in the object."""
 
@@ -233,6 +238,12 @@ class BaseWave:
         self.__dict__[lims] = (self._data[field][0], self._data[field][-1])
         return self._data[field]
 
-    def get_time(self):
-        """Return the discretized time domain."""
+    @property
+    def time_vect(self):
+        """a vector with the time discretized"""
         return self._get_time_or_space('time')
+
+    @property
+    def x_vect(self):
+        """a vector with the discretization of space in the x direction"""
+        raise NotImplementedError

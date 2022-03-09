@@ -45,18 +45,18 @@ class Membrane(BaseWave):
         # Parameters for discretization
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
-        self.time = T
-        self.domain = size
+        self.time_boundary = T
+        self.space_boundary = size
         self._data = BaseWave()._data
-        self.boundary = boundary
+        self.boundary_condition = boundary
         self.normalize = normalize
 
         # Describing the domain
-        Lx = self.domain[0][1]     # Length in x direction
-        Ly = self.domain[1][1]     # Length in y direction
+        Lx = self.space_boundary[0][1]     # Length in x direction
+        Ly = self.space_boundary[1][1]     # Length in y direction
 
         # Discretizing the domain
-        self.get_time()
+        BaseWave._get_time_or_space(self, 'time')
 
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
         xs = flip_and_hstack(np.arange(0, Lx, dx, dtype = np.float32))
@@ -64,7 +64,7 @@ class Membrane(BaseWave):
         self._data['domain'] = np.meshgrid(xs, ys)
 
         # Update domain
-        self.domain = (self.xs[-1]*2, self.ys[-1]*2)
+        self.domain = (self.x_vect[-1]*2, self.y_vect[-1]*2)
 
         # Verify sources
         self._sources = []
@@ -77,12 +77,12 @@ class Membrane(BaseWave):
                     self.add_source(src, pos)
 
     @property
-    def domain(self):
+    def space_boundary(self):
         """the limits of the memebrane"""
         return self._xylims
 
-    @domain.setter
-    def domain(self, value):
+    @space_boundary.setter
+    def space_boundary(self, value):
         err = TypeError('the size of the membrane shoulde be a tuple of \
 two numbers greater than 0.')
 
@@ -95,20 +95,32 @@ two numbers greater than 0.')
         BaseWave._set_tuple_value(self, field, value, pred, err, f)
 
     @property
-    def xs(self):
+    def x_vect(self):
+        """a vector with the discretization of space in the x direction"""
         return self._data['domain'][0][0,:]
 
     @property
-    def ys(self):
+    def y_vect(self):
+        """a vector of the discretization in the y direction"""
         return self._data['domain'][1][:,0]
 
     @property
-    def boundary(self):
+    def xy_grid(self):
+        """a tuple with the grid of x and y values"""
+        return self._data['domain']
+
+    @property
+    def time_vect(self):
+        """a vector of the discretization of the time"""
+        return self._data['time']
+
+    @property
+    def boundary_condition(self):
         """the boundary conditions"""
         return self._boundary
 
-    @boundary.setter
-    def boundary(self, value):
+    @boundary_condition.setter
+    def boundary_condition(self, value):
         if (value in ('transparent', 'free') or
             isinstance(value, int)):
             self._boundary = value
@@ -140,18 +152,19 @@ position should be numbers.')
         self._add_source_to_list(source, pos, reflected = False)
 
         # Check boundary condition
-        if self.boundary == 'transparent':
+        if self.boundary_condition == 'transparent':
             return
-        elif self.boundary == 'free' or isinstance(self.boundary, int):
+        elif (self.boundary_condition == 'free' or
+              isinstance(self.boundary_condition, int)):
             # Fist iteration
             reflected_positions = self._reflect_position(pos)
 
             # Additional iterations
-            if isinstance(self.boundary, int):
+            if isinstance(self.boundary_condition, int):
                 tmp1 = copy.deepcopy(reflected_positions)
                 tmp2 = []
 
-                for k in range(0, self.boundary - 1):
+                for k in range(0, self.boundary_condition - 1):
                     for p in tmp1:
                         tmp2 += self._reflect_position(p)
 
@@ -182,8 +195,8 @@ position should be numbers.')
         d_max = np.max(dist)
 
         # Check if `pos` is inside the domain of the membrane
-        if self.xs[0] <= pos[0] <= self.xs[-1] \
-           and self.ys[0] <= pos[1] <= self.ys[-1]:
+        if self.x_vect[0] <= pos[0] <= self.x_vect[-1] \
+           and self.y_vect[0] <= pos[1] <= self.y_vect[-1]:
             d_min = 0
         else:
             d_min = np.min(dist)
@@ -192,8 +205,8 @@ position should be numbers.')
         source.purge_data()
         source.dx = self.dx
         source.fs = self.fs
-        source.domain = (d_min, d_max)
-        source.time = self.time
+        source.space_boundary = (d_min, d_max)
+        source.time_boundary = self.time_boundary
 
         if reflected:
             self._reflected_sources.append((source, pos, dist))
@@ -217,7 +230,7 @@ position should be numbers.')
         #  7 | 6 | 5
 
         x, y = pos
-        Dx, Dy = self.domain[0][1], self.domain[1][1]
+        Dx, Dy = self.space_boundary[0][1], self.space_boundary[1][1]
         new_coord = lambda b, p: 2 * b - p
         new_pos = lambda inds: \
             list(map(lambda i:
@@ -276,17 +289,15 @@ should not have been reached.')
     def eval(self):
         """Evaluate the displacement of the memebrane."""
 
-        data = np.zeros((self.xs.size,
-                         self.ys.size,
-                         self.get_time().size),
+        data = np.zeros((self.y_vect.size,
+                         self.x_vect.size,
+                         self.time_vect.size),
                         dtype = np.float32)
 
         for src, pos, dist in (self._sources + self._reflected_sources):
             src.eval()
-            src_data = src.get_data()
-            src_domain = src.get_space()
 
-            data += base.interp(dist, src_domain, src_data)
+            data += base.interp(dist, src.x_vect, src.data)
 
             src.purge_data()
 
@@ -298,21 +309,7 @@ should not have been reached.')
 
         self._data['results'] = data
 
-    def get_data(self):
-        """Returns the time history of the membrane.
-
-        Returns a matrix of shape (nX, nY, nT) with
-            `nT = T * fs`
-            `nX = Lx // dx` and
-            `nY = Ly // dx`
-        where `T` is the total travel time, `fs` is the sampling
-        frequency, `Lx` and `Ly` ar the length of the membrane in
-        the x and y directions, respectively.  Therefore, each
-        page `k` of the matrix is the "photograph" of the
-        displacement of the domain in instante `k / fs`.  Each
-        element (i, j, k) can be mapped to a position via the
-        index (i, j) in the matrices obtained by `getX` and
-        `getY` methods.
-        """
-
+    @property
+    def data(self):
+        """the data evaluated in this object"""
         return self._data['results']

@@ -50,18 +50,18 @@ class Wavepacket(BaseWave):
         self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
         self.envelope = envelope   # Envelope
-        self.time = T
-        self.domain = L
+        self.time_boundary = T
+        self.space_boundary = L
         self.dispersion = disprel
         self.normalize = normalize
 
     @property
-    def domain(self):
+    def space_boundary(self):
         """the limits of the space domain"""
         return self._xlim
 
-    @domain.setter
-    def domain(self, L):
+    @space_boundary.setter
+    def space_boundary(self, L):
         pred = lambda x: isinstance(x, numbers.Number)
         err = 'The limits of the domain should be numbers.'
         BaseWave._set_tuple_value(self, '_xlim', L, pred,
@@ -122,46 +122,30 @@ a list, containing the frequency spectrum of the wave packet.'
             self._envelope_func = func
             return
 
-    def get_space(self):
-        """Return the discretized space domain."""
+    @property
+    def x_vect(self):
+        """a vector of the discretization in the x direction"""
         return BaseWave._get_time_or_space(self, 'space')
 
-    def get_complex_data(self):
-        """Return the actual data for the wavepacket in complex values.
-
-        Returns a matrix of shape (nT, nX) with
-            `nT = T * fs` and `nX = L // dx`,
-        where `T` is the total travel time, `fs` is the sampling
-        frequency, `L` is the length of the domain and `dx` is spatial
-        step.  Therefore, each line `i` of the matrix the displacement
-        of the domain in instant `i / fs` seconds, and each column `j`
-        is the whole time history from 0 to T of a point in position
-        `j * dx`.  If the wavepacket have not been evaluated yet,
-        `eval` with be run.
-        """
-
-        if self._data['results'] is None:
-            self.eval()
-
+    @property
+    def complex_data(self):
+        """the data evaluated in this object in complex values"""
         return self._data['results']
 
-    def get_data(self):
-        """Return the time history of the wavepacket.
-
-        It does the same as `get_complex_data` but returns a matrix
-        with real values.
-        """
-
-        # To get 0 displacement at 0 time, we extract the sine part of
-        # the data, which is its imaginary part
-        return (-np.imag(self.get_complex_data()))
+    @property
+    def data(self):
+        """the data evaluated in this object"""
+        if self.complex_data is None:
+            return None
+        else:
+            return (-np.imag(self.complex_data))
 
     def eval(self):
         """Evaluate the wavepacket."""
 
         # Rerun discretization
-        self.get_time()
-        self.get_space()
+        self.time_vect
+        self.x_vect
 
         data = 0
         for f in self._freq_spectrum:
@@ -179,7 +163,7 @@ a list, containing the frequency spectrum of the wave packet.'
         # Apply envelope
         if callable(self.envelope):
             f = np.vectorize(self.envelope)
-            envelope = f(self.get_space())
+            envelope = f(self.x_vect)
             for i in range(0, data.shape[0]):
                 data[i,:] *= envelope
 
