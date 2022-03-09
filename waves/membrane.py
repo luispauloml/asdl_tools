@@ -43,6 +43,7 @@ class Membrane(BaseWave):
     def __init__(self, fs, dx, size, T,
                  sources = None, normalize = True, boundary = 'transparent'):
         # Parameters for discretization
+        self._steps = BaseWave()._steps
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
         self.time_boundary = T
@@ -205,8 +206,17 @@ position should be numbers.')
         source.purge_data()
         source.dx = self.dx
         source.fs = self.fs
-        source.space_boundary = (d_min, d_max)
-        source.time_boundary = self.time_boundary
+
+        # Floating point operations may result in different values
+        # between the two classe.  Instead of simply passing
+        # time_boundary and (d_min, d_max) to the the source, it is
+        # desirable to modify it to avoid the discretization in the
+        # source returning one value less than it should be.
+        # Therfore, I add a quarter of self.dt and self.dx to the
+        # upper limits.
+        source.space_boundary = (d_min, d_max + self.dx / 4)
+        source.time_boundary = (self.time_boundary[0],
+                                self.time_boundary[1] + self.dt / 4)
 
         if reflected:
             self._reflected_sources.append((source, pos, dist))

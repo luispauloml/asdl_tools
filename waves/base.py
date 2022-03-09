@@ -52,8 +52,8 @@ def interp(matrix, xs, data):
     based on the values of `xs`.  It is useful to interplote results
     from `complex_wave` of 2D domains.
 
-    `xs` and `data` should be numpy.array of shapes (n,) and (m,n),
-    respectively.  `matrix` should be a numpy.array.  If `matrix` has
+    `xs` and `data` should be numpy.ndarray of shapes (m,) and (m,n),
+    respectively.  `matrix` should be a numpy.ndarray.  If `matrix` has
     shape (p,) this function will return an array of shape (m,p); if
     it has shape (p,q), the returned value will have shape (p,q,m).
 
@@ -83,46 +83,66 @@ class BaseWave:
 
     def __init__(self):
         self._data = {'domain': None, 'time': None, 'results': None}
+        self._steps = [None, None, None]
 
-    def _set_scalar(self, field, value, apply_to_value, if_none, err):
-        dict_ = self.__dict__
+    def _set_steps(self, step, value, if_none, err_msg):
         if value is None:
             if_none()
         elif isinstance(value, numbers.Number):
-            dict_[field] = apply_to_value(value)
+            # When either frequency or time are set, the other should
+            # also be reset
+            if step == 'freq':
+                self._steps[0] = value
+                self._steps[1] = 1/value
+            elif step == 'time':
+                self._steps[0] = 1/value
+                self._steps[1] = value
+            elif step == 'space':
+                self._steps[2] = value
+            else:
+                raise ValueError('invald type of step')
         else:
-            raise TypeError(err)
+            raise TypeError(err_msg)
 
     @property
     def fs(self):
         """the sampling frequency"""
-        if self.dt is None:
-            return None
-        else:
-            return 1/self.dt
+        return self._steps[0]
 
     @fs.setter
     def fs(self, value):
-        err = 'the sampling frequency should be a number.'
+        err_msg = 'the frequency should be a number'
         def if_none(obj):
             def worker():
-                obj.dt = None
+                obj._steps = [None, None, obj.dx]
             return worker
-        self._set_scalar('dt', value, lambda x: 1/x, if_none(self), err)
+        self._set_steps('freq', value, if_none(self), err_msg)
+
+    @property
+    def dt(self):
+        """the time step"""
+        return self._steps[1]
+
+    @dt.setter
+    def dt(self, value):
+        err_msg = 'the time step should be a number'
+        def if_none(obj):
+            def worker():
+                obj._steps = [None, None, obj.dx]
+            return worker
+        self._set_steps('time', value, if_none(self), err_mesg)
 
     @property
     def dx(self):
         """the step in space"""
-        return self._step
+        return self._steps[2]
 
     @dx.setter
     def dx(self, value):
-        err = 'the step in space should be a number.'
-        def if_none(obj):
-            def worker():
-                obj._step = None
-            return worker
-        self._set_scalar('_step', value, lambda x: x, if_none(self), err)
+        err_msg = 'the step in space should be a number.'
+        def if_none():
+            self._steps[2] = None
+        self._set_steps('space', value, if_none, err_msg)
 
     def _set_tuple_value(self, field, value,
                          predicate, err, apply_to_values):
@@ -234,7 +254,9 @@ class BaseWave:
                 return self._data[field]
 
         # If check fails, re-evaluate
-        self._data[field] = np.arange(v1, v2, step)
+        # Due to floating point errors, to avoid changes in size of
+        # the output, I add a quarter of the step to the upper limit
+        self._data[field] = np.arange(v1, v2 + step / 4, step)
         self.__dict__[lims] = (self._data[field][0], self._data[field][-1])
         return self._data[field]
 

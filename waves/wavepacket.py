@@ -46,6 +46,7 @@ class Wavepacket(BaseWave):
     def __init__(self, disprel, dx = None, L = None, fs = None, \
                  T = None, freq = None, normalize = True, envelope = None):
         self._data = BaseWave()._data
+        self._steps = BaseWave()._steps
         self.fs = fs            # Sampling frequency
         self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
@@ -162,7 +163,7 @@ a list, containing the frequency spectrum of the wave packet.'
 
         # Apply envelope
         if callable(self.envelope):
-            f = np.vectorize(self.envelope)
+            f = np.vectorize(self.envelope, otypes = [np.float32])
             envelope = f(self.x_vect)
             for i in range(0, data.shape[0]):
                 data[i,:] *= envelope
