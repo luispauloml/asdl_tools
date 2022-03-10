@@ -79,7 +79,7 @@ def interp(matrix, xs, data):
     return return_val
 
 class BaseWave:
-    """Base class to define Wavepacket and Membrane"""
+    """Base class to define Wavepacket and Surface"""
 
     def __init__(self):
         self._data = {'domain': None, 'time': None, 'results': None}

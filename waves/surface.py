@@ -6,8 +6,8 @@ import waves.wavepacket as wp
 from waves.base import BaseWave
 from collections.abc import Iterable
 
-class Membrane(BaseWave):
-    """A class for creating finite vibrating membranes.
+class Surface(BaseWave):
+    """A class for creating finite vibrating surfaces.
 
     Parameters:
     fs : float
@@ -15,8 +15,8 @@ class Membrane(BaseWave):
     dx : float
         Spatial step in meters.
     size : tuple (float, float)
-        Size of the membrane in meters. Should be a t (x_size, y_size),
-        and the grid is always centered at (0, 0)
+        Dimensions of the surface in meters. Should be a tuple
+        (x_size, y_size), and the grid is always centered at (0, 0).
     T : float or tuple (float, float)
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
@@ -28,9 +28,9 @@ class Membrane(BaseWave):
         position of the source in the xy-plane.
     normalize : bool, optional, default: True
         Flag do normalize the data.  If True, the maximum amplitude in
-        the membrane domain will be 1.
+        the surface domain will be 1.
     boundary : string or int, optional, default: 'transparent'
-        Sets the boundary conditions of the membrane.  The possible
+        Sets the boundary conditions of the surface.  The possible
         string values are: 'free' or 'transparent'.  If set to 'free',
         aditional sources will be added to simulated reflection at the
         boundaries without change of phase of the wave.  If set to
@@ -72,19 +72,19 @@ class Membrane(BaseWave):
         self._reflected_sources = []
         if sources is not None:
             if not isinstance(sources, Iterable):
-                raise TypeError('Membrane: sources should be a list or None')
+                raise TypeError('sources should be a list or None')
             else:
                 for src, pos in sources:
                     self.add_source(src, pos)
 
     @property
     def space_boundary(self):
-        """the limits of the memebrane"""
+        """the limits of the surface"""
         return self._xylims
 
     @space_boundary.setter
     def space_boundary(self, value):
-        err = TypeError('the size of the membrane shoulde be a tuple of \
+        err = TypeError('the size of the surface shoulde be a tuple of \
 two numbers greater than 0.')
 
         if not isinstance(value, tuple):
@@ -130,7 +130,7 @@ two numbers greater than 0.')
 'transparent' or a int value.")
 
     def add_source(self, source, pos):
-        """Add a source to the membrane.
+        """Add a source to the surface.
 
         Parameters:
         source : Wavepacket object
@@ -140,14 +140,14 @@ two numbers greater than 0.')
         """
 
         if not isinstance(source, wp.Wavepacket):
-            raise TypeError('Membrane: tuples describing the source \
+            raise TypeError('tuples describing the source \
 should have a `Wavepacket` object in the first position')
         if not isinstance(pos, tuple):
-            raise TypeError('Membrane: tuples describing the source \
+            raise TypeError('tuples describing the source \
 should have a tuple (number, number) in the second position')
         if ((not isinstance(pos[0], numbers.Number)) or
             (not isinstance(pos[1], numbers.Number))):
-            raise TypeError('Membrane: the two elements of the \
+            raise TypeError('the two elements of the \
 position should be numbers.')
 
         self._add_source_to_list(source, pos, reflected = False)
@@ -172,7 +172,7 @@ position should be numbers.')
                     reflected_positions += tmp2
                     tmp1, tmp2 = tmp2, []
 
-            # Adding to the membrane
+            # Adding to the surface
             for p in reflected_positions:
                 self._add_source_to_list(source, p, reflected = True)
 
@@ -181,11 +181,11 @@ position should be numbers.')
 
         # To reduce computing time we set the domain of the source
         # as:
-        #    - [0, d_max] if the source is inside the membrane
+        #    - [0, d_max] if the source is inside the surface
         #    - [d_min, d_max] if the source is outside the
-        #      membrane domain
+        #      surface domain
         # where d_min and d_max are the minimum and the maximum
-        # distance from the source to the edges of the memebrane
+        # distance from the source to the edges of the surface
         # Then we interpolate the displacement according to the
         # distance from a point (x, y) to the position of the source.
 
@@ -195,7 +195,7 @@ position should be numbers.')
         dist = np.sqrt(dx ** 2 + dy ** 2)
         d_max = np.max(dist)
 
-        # Check if `pos` is inside the domain of the membrane
+        # Check if `pos` is inside the domain of the surface
         if self.x_vect[0] <= pos[0] <= self.x_vect[-1] \
            and self.y_vect[0] <= pos[1] <= self.y_vect[-1]:
             d_min = 0
@@ -227,9 +227,9 @@ position should be numbers.')
         """Check the region in which the source is located."""
 
         # Notation:
-        #  0: inside the membrane domain
+        #  0: inside the surface domain
         #  1 to 8: outside
-        #  a to d: the edges of the membrane
+        #  a to d: the edges of the surface
         #
         #  1 | 2 | 3 
         # ___|_a_|___
@@ -297,7 +297,7 @@ should not have been reached.')
         return reflections
 
     def eval(self):
-        """Evaluate the displacement of the memebrane."""
+        """Evaluate the displacement of the surface."""
 
         data = np.zeros((self.y_vect.size,
                          self.x_vect.size,
