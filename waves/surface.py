@@ -1,10 +1,10 @@
 import copy
 import numbers
 import numpy as np
-import waves.base as base
-import waves.wavepacket as wp
-from waves.base import BaseWave
 from collections.abc import Iterable
+from . import base
+from . import wavepacket as wp
+from .base import BaseWave
 
 class Surface(BaseWave):
     """A class for creating finite vibrating surfaces.

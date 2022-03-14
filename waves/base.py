@@ -1,6 +1,5 @@
-from math import pi
-import numpy as np
 import numbers
+import numpy as np
 from collections.abc import Iterable
 
 def complex_wave(disprel, freq, xs, ts):
@@ -21,8 +20,8 @@ def complex_wave(disprel, freq, xs, ts):
 
     """
 
-    w = 2*pi*freq               # angular frequency
-    k = 2*pi*disprel(freq)      # angular wavenumer
+    w = 2*np.pi*freq            # angular frequency
+    k = 2*np.pi*disprel(freq)   # angular wavenumer
     us = np.zeros((ts.size, xs.size), dtype = np.complex64)
 
     for i in range(0, ts.size):
