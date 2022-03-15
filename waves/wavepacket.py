@@ -147,7 +147,10 @@ a list, containing the frequency spectrum of the wave packet.'
         self.time_vect
         self.x_vect
 
-        data = 0
+        data = np.zeros((self._data['time'].size,
+                         self._data['domain'].size),
+                        dtype = np.complex128)
+
         for f in self._freq_spectrum:
             for d in self._disprel:
                 data += base.complex_wave(d, f,
