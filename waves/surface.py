@@ -259,7 +259,7 @@ position should be numbers.')
             # Region 1 -> reflect on [b, c]
             reflections = new_pos(['b', 'c'])
 
-        elif (y > Dy and
+        elif (y >= Dy and
               -Dx <= x < Dx):
             # Region 2 -> reflect on [b, c, d]
             reflections = new_pos(['b', 'c', 'd'])
@@ -268,16 +268,16 @@ position should be numbers.')
             # Region 3 -> reflect on [c, d]
             reflections = new_pos(['c', 'd'])
 
-        elif (x > Dx and
+        elif (x >= Dx and
               -Dy <= y <= Dy):
             # Region 4 -> reflect on [a, c, d]
             reflections = new_pos(['a', 'c', 'd'])
 
-        elif x >= Dx and y <= Dy:
+        elif x >= Dx and y <= -Dy:
             # Region 5 -> reflect on [a, d]
             reflections = new_pos(['a', 'd'])
 
-        elif y < -Dy and -Dx <= x < Dx:
+        elif y <= -Dy and -Dx <= x < Dx:
             # Region 6 -> reflect on [a, b, d]
             reflections = new_pos(['a', 'b', 'd'])
 
@@ -285,7 +285,7 @@ position should be numbers.')
             # Region 7 -> reflect on [a, b]
             reflections = new_pos(['a', 'b'])
 
-        elif (x < -Dx and
+        elif (x <= -Dx and
               -Dy <= y <= Dy):
             # Region 8 -> reflect on [a, b, c]
             reflections = new_pos(['a', 'b', 'c'])
