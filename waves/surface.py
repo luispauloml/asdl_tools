@@ -52,21 +52,6 @@ class Surface(BaseWave):
         self.boundary_condition = boundary
         self.normalize = normalize
 
-        # Describing the domain
-        Lx = self.space_boundary[0][1]     # Length in x direction
-        Ly = self.space_boundary[1][1]     # Length in y direction
-
-        # Discretizing the domain
-        BaseWave._get_time_or_space(self, 'time')
-
-        flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
-        xs = flip_and_hstack(np.arange(0, Lx, dx, dtype = np.float32))
-        ys = flip_and_hstack(np.arange(0, Ly, dx, dtype = np.float32))
-        self._data['domain'] = np.meshgrid(xs, ys)
-
-        # Update domain
-        self.domain = (self.x_vect[-1]*2, self.y_vect[-1]*2)
-
         # Verify sources
         self._sources = []
         if sources is not None:
@@ -291,6 +276,20 @@ should not have been reached.')
     def eval(self):
         """Evaluate the displacement of the surface."""
 
+        # Discretize time
+        BaseWave._get_time_or_space(self, 'time')
+
+        # Discretize space
+        if None in [self.dx, self.space_boundary]:
+            raise ValueError('Either `dx` or `space_boundary` are not set.')
+        Lx = self.space_boundary[0][1]     # Length in x direction
+        Ly = self.space_boundary[1][1]     # Length in y direction
+
+        flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
+        xs = flip_and_hstack(np.arange(0, Lx, self.dx, dtype = np.float32))
+        ys = flip_and_hstack(np.arange(0, Ly, self.dx, dtype = np.float32))
+        self._data['domain'] = np.meshgrid(xs, ys)
+
         # Prepare sources
         self._sources_to_eval = []
         reflect_flag = self.boundary_condition != 'transparent'
@@ -298,6 +297,7 @@ should not have been reached.')
             self._add_source_to_list(source, pos,
                                      reflect = reflect_flag)
 
+        # Initialize and evaluate
         data = np.zeros((self.y_vect.size,
                          self.x_vect.size,
                          self.time_vect.size),
