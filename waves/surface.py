@@ -40,7 +40,7 @@ class Surface(BaseWave):
 
     """
 
-    def __init__(self, fs, dx, size, time,
+    def __init__(self, fs = None, dx = None, size = None, time = None,
                  sources = None, normalize = True, boundary = 'transparent'):
         # Parameters for discretization
         self._steps = BaseWave()._steps
@@ -70,10 +70,6 @@ class Surface(BaseWave):
     def space_boundary(self, value):
         err = TypeError('the size of the surface shoulde be a tuple of \
 two numbers greater than 0.')
-
-        if not isinstance(value, tuple):
-            raise err
-
         field = '_xylims'
         pred = lambda x: isinstance(x, numbers.Number) and x > 0
         f = lambda x: (-x/2, x/2)

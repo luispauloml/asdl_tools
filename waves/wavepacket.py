@@ -42,7 +42,7 @@ class Wavepacket(BaseWave):
 
     """
 
-    def __init__(self, disprel, dx = None, length = None, fs = None, \
+    def __init__(self, disprel = None, dx = None, length = None, fs = None, \
                  time = None, freq = None, normalize = True, envelope = None):
         self._data = BaseWave()._data
         self._steps = BaseWave()._steps
@@ -74,6 +74,10 @@ class Wavepacket(BaseWave):
 
     @dispersion.setter
     def dispersion(self, disprels):
+        if disprels is None:
+            self._disprel = []
+            return
+
         predicate = lambda f: callable(f)
         err = '`disprel` should be a callable object, e.g., \
 a function of 1 argument, or a list of such elements.'
