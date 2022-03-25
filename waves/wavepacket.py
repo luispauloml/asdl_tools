@@ -18,12 +18,12 @@ class Wavepacket(BaseWave):
         in [1/m].
     dx : number, optional, default: None
         Spatial step in meters.
-    L : number or (number, number), optional, default: None
+    length : number or (number, number), optional, default: None
         Length of the domain in [m].  If a tuple is provided, is
         defines the lower and upper limits of the domain.
     fs : number, optional, default: None
         Sampling frequency in [Hz].
-    T : number or (number, number), optiona, default: None
+    time : number or (number, number), optiona, default: None
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
     freqs : list of numbers, optional, default: None
@@ -42,16 +42,16 @@ class Wavepacket(BaseWave):
 
     """
 
-    def __init__(self, disprel, dx = None, L = None, fs = None, \
-                 T = None, freq = None, normalize = True, envelope = None):
+    def __init__(self, disprel, dx = None, length = None, fs = None, \
+                 time = None, freq = None, normalize = True, envelope = None):
         self._data = BaseWave()._data
         self._steps = BaseWave()._steps
         self.fs = fs            # Sampling frequency
         self.spectrum = freq    # Frequency spectrum
         self.dx = dx            # Spatial pace
         self.envelope = envelope   # Envelope
-        self.time_boundary = T
-        self.space_boundary = L
+        self.time_boundary = time
+        self.space_boundary = length
         self.dispersion = disprel
         self.normalize = normalize
 
@@ -61,10 +61,10 @@ class Wavepacket(BaseWave):
         return self._xlim
 
     @space_boundary.setter
-    def space_boundary(self, L):
+    def space_boundary(self, value):
         pred = lambda x: isinstance(x, numbers.Number)
         err = 'The limits of the domain should be numbers.'
-        BaseWave._set_tuple_value(self, '_xlim', L, pred,
+        BaseWave._set_tuple_value(self, '_xlim', value, pred,
                                   err, lambda x: x)
 
     @property

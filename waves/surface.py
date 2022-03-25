@@ -17,7 +17,7 @@ class Surface(BaseWave):
     size : tuple (float, float)
         Dimensions of the surface in meters. Should be a tuple
         (x_size, y_size), and the grid is always centered at (0, 0).
-    T : float or tuple (float, float)
+    time : float or tuple (float, float)
         Total travel time in [s].  If a tuple is provided, it defines
         the lower and upper limits of the time interval.
     sources : list of (Wavepacket, (float, float)), optional,
@@ -40,13 +40,13 @@ class Surface(BaseWave):
 
     """
 
-    def __init__(self, fs, dx, size, T,
+    def __init__(self, fs, dx, size, time,
                  sources = None, normalize = True, boundary = 'transparent'):
         # Parameters for discretization
         self._steps = BaseWave()._steps
         self.fs = fs            # Sampling frequency
         self.dx = dx            # Spatial pace
-        self.time_boundary = T
+        self.time_boundary = time
         self.space_boundary = size
         self._data = BaseWave()._data
         self.boundary_condition = boundary
