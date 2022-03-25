@@ -69,7 +69,7 @@ class Surface(BaseWave):
 
         # Verify sources
         self._sources = []
-        self._reflected_sources = []
+        self._sources_to_eval = []
         if sources is not None:
             if not isinstance(sources, Iterable):
                 raise TypeError('sources should be a list or None')
@@ -150,7 +150,7 @@ should have a tuple (number, number) in the second position')
             raise TypeError('the two elements of the \
 position should be numbers.')
 
-        self._add_source_to_list(source, pos, reflected = False)
+        self._add_source_to_list(source, pos)
 
         # Check boundary condition
         if self.boundary_condition == 'transparent':
@@ -174,9 +174,9 @@ position should be numbers.')
 
             # Adding to the surface
             for p in reflected_positions:
-                self._add_source_to_list(source, p, reflected = True)
+                self._add_source_to_list(source, p)
 
-    def _add_source_to_list(self, source, pos, reflected = False):
+    def _add_source_to_list(self, source, pos):
         """Add a real or a reflected source."""
 
         # To reduce computing time we set the domain of the source
@@ -218,10 +218,7 @@ position should be numbers.')
         source.time_boundary = (self.time_boundary[0],
                                 self.time_boundary[1] + self.dt / 4)
 
-        if reflected:
-            self._reflected_sources.append((source, pos, dist))
-        else:
-            self._sources.append((source, pos, dist))
+        self._sources_to_eval.append((source, pos, dist))
 
     def _reflect_position(self, pos):
         """Check the region in which the source is located."""
@@ -304,7 +301,7 @@ should not have been reached.')
                          self.time_vect.size),
                         dtype = np.float32)
 
-        for src, pos, dist in (self._sources + self._reflected_sources):
+        for src, pos, dist in self._sources_to_eval:
             src.eval()
 
             data += base.interp(dist, src.x_vect, src.data)
