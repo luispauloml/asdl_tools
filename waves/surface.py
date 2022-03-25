@@ -69,7 +69,6 @@ class Surface(BaseWave):
 
         # Verify sources
         self._sources = []
-        self._sources_to_eval = []
         if sources is not None:
             if not isinstance(sources, Iterable):
                 raise TypeError('sources should be a list or None')
@@ -150,33 +149,9 @@ should have a tuple (number, number) in the second position')
             raise TypeError('the two elements of the \
 position should be numbers.')
 
-        self._add_source_to_list(source, pos)
+        self._sources.append((source, pos))
 
-        # Check boundary condition
-        if self.boundary_condition == 'transparent':
-            return
-        elif (self.boundary_condition == 'free' or
-              isinstance(self.boundary_condition, int)):
-            # Fist iteration
-            reflected_positions = self._reflect_position(pos)
-
-            # Additional iterations
-            if isinstance(self.boundary_condition, int):
-                tmp1 = copy.deepcopy(reflected_positions)
-                tmp2 = []
-
-                for k in range(0, self.boundary_condition - 1):
-                    for p in tmp1:
-                        tmp2 += self._reflect_position(p)
-
-                    reflected_positions += tmp2
-                    tmp1, tmp2 = tmp2, []
-
-            # Adding to the surface
-            for p in reflected_positions:
-                self._add_source_to_list(source, p)
-
-    def _add_source_to_list(self, source, pos):
+    def _add_source_to_list(self, source, pos, reflect):
         """Add a real or a reflected source."""
 
         # To reduce computing time we set the domain of the source
@@ -219,6 +194,26 @@ position should be numbers.')
                                 self.time_boundary[1] + self.dt / 4)
 
         self._sources_to_eval.append((source, pos, dist))
+
+        if reflect:
+            # Fist iteration
+            reflected_positions = self._reflect_position(pos)
+
+            # Additional iterations
+            if isinstance(self.boundary_condition, int):
+                tmp1 = copy.deepcopy(reflected_positions)
+                tmp2 = []
+
+                for k in range(0, self.boundary_condition - 1):
+                    for p in tmp1:
+                        tmp2 += self._reflect_position(p)
+
+                    reflected_positions += tmp2
+                    tmp1, tmp2 = tmp2, []
+
+            # Adding to the surface
+            for p in reflected_positions:
+                self._add_source_to_list(source, p, reflect = False)
 
     def _reflect_position(self, pos):
         """Check the region in which the source is located."""
@@ -295,6 +290,13 @@ should not have been reached.')
 
     def eval(self):
         """Evaluate the displacement of the surface."""
+
+        # Prepare sources
+        self._sources_to_eval = []
+        reflect_flag = self.boundary_condition != 'transparent'
+        for source, pos in self._sources:
+            self._add_source_to_list(source, pos,
+                                     reflect = reflect_flag)
 
         data = np.zeros((self.y_vect.size,
                          self.x_vect.size,
