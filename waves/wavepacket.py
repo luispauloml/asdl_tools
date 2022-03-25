@@ -142,12 +142,23 @@ a list, containing the frequency spectrum of the wave packet.'
         else:
             return (-np.imag(self.complex_data))
 
-    def eval(self):
-        """Evaluate the wavepacket."""
+    def eval(self, domain_only = False):
+        """Evaluate the wavepacket.
+
+        Parameters:
+        domain_only : bool, optional, default = False
+            Evaluate only the discretization of the time and space
+            domains.  After evaluating at least the domain, the values
+            for `x_vect` and friends are available.
+
+        """
 
         # Rerun discretization
         self.time_vect
         self.x_vect
+
+        if domain_only:
+            return
 
         data = np.zeros((self._data['time'].size,
                          self._data['space'].size),

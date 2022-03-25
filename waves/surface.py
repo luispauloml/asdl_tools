@@ -268,8 +268,16 @@ should not have been reached.')
 
         return reflections
 
-    def eval(self):
-        """Evaluate the displacement of the surface."""
+    def eval(self, domain_only = False):
+        """Evaluate the wavepacket.
+
+        Parameters:
+        domain_only : bool, optional, default = False
+            Evaluate only the discretization of the time and space
+            domains.  After evaluating at least the domain, the values
+            for `x_vect` and friends are available.
+
+        """
 
         # Discretize time
         BaseWave._get_time_or_space(self, 'time')
@@ -291,6 +299,9 @@ should not have been reached.')
         for source, pos in self._sources:
             self._add_source_to_list(source, pos,
                                      reflect = reflect_flag)
+
+        if domain_only:
+            return
 
         # Initialize and evaluate
         data = np.zeros((self.y_vect.size,
