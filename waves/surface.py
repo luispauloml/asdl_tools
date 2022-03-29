@@ -82,7 +82,6 @@ two numbers greater than 0.')
 
     @property
     def y_vect(self):
-        """a vector of the discretization in the y direction"""
         return self._data['domain'][1][:,0]
 
     @property
@@ -313,8 +312,3 @@ should not have been reached.')
                 data /= max_abs
 
         self._data['results'] = data
-
-    @property
-    def data(self):
-        """the data evaluated in this object"""
-        return self._data['results']

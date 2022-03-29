@@ -2,71 +2,89 @@ import numbers
 import numpy as np
 from collections.abc import Iterable
 
-class BaseWave:
-    """Base class to define Wavepacket and Surface"""
+class MeasuredData(object):
+    """Objects to stored measured or computed values"""
 
     def __init__(self):
         self._data = {'domain': None, 'time': None, 'results': None}
-        self._steps = [None, None, None]
+        self._steps = {'time': None, 'space': None}
 
-    def _set_steps(self, step, value, if_none, err_msg):
-        if value is None:
-            if_none()
-        elif isinstance(value, numbers.Number):
-            # When either frequency or time are set, the other should
-            # also be reset
-            if step == 'freq':
-                self._steps[0] = value
-                self._steps[1] = 1/value
-            elif step == 'time':
-                self._steps[0] = 1/value
-                self._steps[1] = value
+    def _set_steps(self, step, value):
+        if isinstance(value, numbers.Number) or value is None:
+            if step in ['time', 'freq']:
+                if value is None:
+                    self._steps['time'] = None
+                else:
+                    # Sampling frequency and time step should
+                    # be set together
+                    if step == 'freq':
+                        self._steps['time'] = (value, 1/value)
+                    else:
+                        self._steps['time'] = (1/value, value)
             elif step == 'space':
-                self._steps[2] = value
+                self._steps['space'] = value
             else:
-                raise ValueError('invald type of step')
+                raise ValueError('invald step')
         else:
-            raise TypeError(err_msg)
+            raise TypeError('the value should be a number or None')
 
     @property
     def fs(self):
         """the sampling frequency"""
-        return self._steps[0]
+        return self._steps['time'][0]
 
     @fs.setter
     def fs(self, value):
-        err_msg = 'the frequency should be a number'
-        def if_none(obj):
-            def worker():
-                obj._steps = [None, None, obj.dx]
-            return worker
-        self._set_steps('freq', value, if_none(self), err_msg)
+        self._set_steps('freq', value)
 
     @property
     def dt(self):
         """the time step"""
-        return self._steps[1]
+        return self._steps['time'][1]
 
     @dt.setter
     def dt(self, value):
-        err_msg = 'the time step should be a number'
-        def if_none(obj):
-            def worker():
-                obj._steps = [None, None, obj.dx]
-            return worker
-        self._set_steps('time', value, if_none(self), err_mesg)
+        self._set_steps('time', value)
 
     @property
     def dx(self):
         """the step in space"""
-        return self._steps[2]
+        return self._steps['space']
 
     @dx.setter
     def dx(self, value):
-        err_msg = 'the step in space should be a number.'
-        def if_none():
-            self._steps[2] = None
-        self._set_steps('space', value, if_none, err_msg)
+        self._set_steps('space', value)
+
+    @property
+    def data(self):
+        """the data contained in this object"""
+        return self._data['results']
+
+    def purge_data(self):
+        """Delete the data stored in the object."""
+        self._data = MeasuredData()._data
+
+    @property
+    def time_vect(self):
+        """a vector with the time discretized"""
+        return self._data['time']
+
+    @time_vect.setter
+    def time_vect(self, vect):
+        self._data['time'] = vect
+
+    @property
+    def x_vect(self):
+        """a vector of the discretization of space in the x direction"""
+        raise NotImplementedError
+
+    @property
+    def y_vect(self):
+        """a vector of the discretization of space in the y direction"""
+        raise NotImplementedError
+
+class BaseWave(MeasuredData):
+    """Base class to define Wavepacket and Surface"""
 
     def _set_tuple_value(self, field, value,
                          predicate, err, apply_to_values):
@@ -142,17 +160,6 @@ class BaseWave:
     def eval(self):
         raise NotImplementedError
 
-    @property
-    def data(self):
-        """the data evaluated in this object"""
-        raise NotImplementedError
-
-    def purge_data(self):
-        """Delete the evaluated data stored in the object."""
-
-        del(self._data)
-        self._data = BaseWave()._data
-
     def _get_time_or_space(self, flag):
         if flag == 'time':
             step, lims = self.dt, '_tlim'
@@ -188,8 +195,3 @@ class BaseWave:
     def time_vect(self):
         """a vector with the time discretized"""
         return self._get_time_or_space('time')
-
-    @property
-    def x_vect(self):
-        """a vector with the discretization of space in the x direction"""
-        raise NotImplementedError

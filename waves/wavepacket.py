@@ -128,7 +128,6 @@ a list, containing the frequency spectrum of the wave packet.'
 
     @property
     def x_vect(self):
-        """a vector of the discretization in the x direction"""
         return BaseWave._get_time_or_space(self, 'space')
 
     @property
@@ -138,7 +137,6 @@ a list, containing the frequency spectrum of the wave packet.'
 
     @property
     def data(self):
-        """the data evaluated in this object"""
         if self.complex_data is None:
             return None
         else:
