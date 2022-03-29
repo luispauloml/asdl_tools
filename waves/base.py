@@ -6,7 +6,7 @@ class MeasuredData(object):
     """Objects to stored measured or computed values"""
 
     def __init__(self):
-        self._data = {'domain': None, 'time': None, 'results': None}
+        self._data = {'space': None, 'time': None, 'results': None}
         self._steps = {'time': None, 'space': None}
 
     def _set_steps(self, step, value):
@@ -166,7 +166,7 @@ class BaseWave(MeasuredData):
             field, err = 'time', 'Either `fs` or `time` are not set.'
         elif flag == 'space':
             step, lims = self.dx, '_xlim'
-            field, err = 'domain', 'Either `dx` or `domain` are not set.'
+            field, err = 'space', 'Either `dx` or `domain` are not set.'
         else:
             raise ValueError('something went wrong')
 

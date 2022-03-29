@@ -78,16 +78,16 @@ two numbers greater than 0.')
     @property
     def x_vect(self):
         """a vector with the discretization of space in the x direction"""
-        return self._data['domain'][0][0,:]
+        return self._data['space'][0][0,:]
 
     @property
     def y_vect(self):
-        return self._data['domain'][1][:,0]
+        return self._data['space'][1][:,0]
 
     @property
     def xy_grid(self):
         """a tuple with the grid of x and y values"""
-        return self._data['domain']
+        return self._data['space']
 
     @property
     def time_vect(self):
@@ -145,8 +145,8 @@ position should be numbers.')
         # distance from a point (x, y) to the position of the source.
 
         # Calculate maximum distance
-        dx = self._data['domain'][0] - pos[0]
-        dy = self._data['domain'][1] - pos[1]
+        dx = self._data['space'][0] - pos[0]
+        dy = self._data['space'][1] - pos[1]
         dist = np.sqrt(dx ** 2 + dy ** 2)
         d_max = np.max(dist)
 
@@ -283,7 +283,7 @@ should not have been reached.')
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
         xs = flip_and_hstack(np.arange(0, Lx, self.dx, dtype = np.float32))
         ys = flip_and_hstack(np.arange(0, Ly, self.dx, dtype = np.float32))
-        self._data['domain'] = np.meshgrid(xs, ys)
+        self._data['space'] = np.meshgrid(xs, ys)
 
         # Prepare sources
         self._sources_to_eval = []

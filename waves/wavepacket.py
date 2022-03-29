@@ -63,7 +63,7 @@ class Wavepacket(BaseWave):
     @space_boundary.setter
     def space_boundary(self, value):
         pred = lambda x: isinstance(x, numbers.Number)
-        err = 'The limits of the domain should be numbers.'
+        err = 'The limits of the space should be numbers.'
         BaseWave._set_tuple_value(self, '_xlim', value, pred,
                                   err, lambda x: x)
 
@@ -150,13 +150,13 @@ a list, containing the frequency spectrum of the wave packet.'
         self.x_vect
 
         data = np.zeros((self._data['time'].size,
-                         self._data['domain'].size),
+                         self._data['space'].size),
                         dtype = np.complex128)
 
         for f in self._freq_spectrum:
             for d in self._disprel:
                 data += utils.complex_wave(d, f,
-                                           self._data['domain'],
+                                           self._data['space'],
                                            self._data['time'])
 
         # Normalizing
