@@ -2,7 +2,7 @@ import copy
 import numbers
 import numpy as np
 from collections.abc import Iterable
-from . import base
+from . import utils
 from . import wavepacket as wp
 from .base import BaseWave
 
@@ -302,7 +302,7 @@ should not have been reached.')
         for src, pos, dist in self._sources_to_eval:
             src.eval()
 
-            data += base.interp(dist, src.x_vect, src.data)
+            data += utils.interp(dist, src.x_vect, src.data)
 
             src.purge_data()
 

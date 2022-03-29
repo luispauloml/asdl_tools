@@ -1,6 +1,6 @@
 import numbers
 import numpy as np
-from . import base
+from . import utils
 from .base import BaseWave
 
 class Wavepacket(BaseWave):
@@ -157,9 +157,9 @@ a list, containing the frequency spectrum of the wave packet.'
 
         for f in self._freq_spectrum:
             for d in self._disprel:
-                data += base.complex_wave(d, f,
-                                          self._data['domain'],
-                                          self._data['time'])
+                data += utils.complex_wave(d, f,
+                                           self._data['domain'],
+                                           self._data['time'])
 
         # Normalizing
         if self.normalize:
