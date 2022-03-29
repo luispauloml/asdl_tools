@@ -6,7 +6,7 @@ class MeasuredData(object):
     """Objects to stored measured or computed values"""
 
     def __init__(self):
-        self._data = {'space': None, 'time': None, 'results': None}
+        self._data = {'space': [None, None], 'time': None, 'results': None}
         self._steps = {'time': None, 'space': None}
 
     def _set_steps(self, step, value):
@@ -76,12 +76,12 @@ class MeasuredData(object):
     @property
     def x_vect(self):
         """a vector of the discretization of space in the x direction"""
-        raise NotImplementedError
+        return self._data['space'][0]
 
     @property
     def y_vect(self):
         """a vector of the discretization of space in the y direction"""
-        raise NotImplementedError
+        return self._data['space'][1]
 
 class BaseWave(MeasuredData):
     """Base class to define Wavepacket and Surface"""
@@ -160,38 +160,17 @@ class BaseWave(MeasuredData):
     def eval(self):
         raise NotImplementedError
 
-    def _get_time_or_space(self, flag):
-        if flag == 'time':
-            step, lims = self.dt, '_tlim'
-            field, err = 'time', 'Either `fs` or `time` are not set.'
-        elif flag == 'space':
-            step, lims = self.dx, '_xlim'
-            field, err = 'space', 'Either `dx` or `domain` are not set.'
-        else:
-            raise ValueError('something went wrong')
-
-        if step is None or self.__dict__[lims] is None:
-            raise ValueError(err)
-
-        # Return stored values
-        v1, v2 = self.__dict__[lims]
-        values = self._data[field]
-
-        # Check with current properties
+    def _discretize(self, lims, step, values):
+        """Check if values change or not and rediscretize"""
+        v1, v2 = lims
         if values is not None:
             if (step == values[1] - values[0] and
                 values[0] == v1 and
                 values[-1] == v2):
-                return self._data[field]
+                return values
 
         # If check fails, re-evaluate
         # Due to floating point errors, to avoid changes in size of
         # the output, I add a quarter of the step to the upper limit
-        self._data[field] = np.arange(v1, v2 + step / 4, step)
-        self.__dict__[lims] = (self._data[field][0], self._data[field][-1])
-        return self._data[field]
+        return np.arange(v1, v2 + step / 4, step)
 
-    @property
-    def time_vect(self):
-        """a vector with the time discretized"""
-        return self._get_time_or_space('time')

@@ -127,10 +127,6 @@ a list, containing the frequency spectrum of the wave packet.'
             return
 
     @property
-    def x_vect(self):
-        return BaseWave._get_time_or_space(self, 'space')
-
-    @property
     def complex_data(self):
         """the data evaluated in this object in complex values"""
         return self._data['results']
@@ -154,20 +150,24 @@ a list, containing the frequency spectrum of the wave packet.'
         """
 
         # Rerun discretization
-        self.time_vect
-        self.x_vect
+        self._data['time'] = \
+            BaseWave._discretize(self, self.time_boundary, self.dt, self.time_vect)
+        self._data['space'][0] = \
+            BaseWave._discretize(self, self.space_boundary, self.dx, self.x_vect)
+        self.time_boundary = (self.time_vect[0], self.time_vect[-1])
+        self.space_boundary = (self.x_vect[0], self.x_vect[-1])
 
         if domain_only:
             return
 
         data = np.zeros((self._data['time'].size,
-                         self._data['space'].size),
+                         self.x_vect.size),
                         dtype = np.complex128)
 
         for f in self._freq_spectrum:
             for d in self._disprel:
                 data += utils.complex_wave(d, f,
-                                           self._data['space'],
+                                           self.x_vect,
                                            self._data['time'])
 
         # Normalizing

@@ -48,7 +48,10 @@ class Surface(BaseWave):
         self.dx = dx            # Spatial pace
         self.time_boundary = time
         self.space_boundary = size
+
         self._data = BaseWave()._data
+        self._data['space'].append(None)  # Add placeholder for grid
+
         self.boundary_condition = boundary
         self.normalize = normalize
 
@@ -76,23 +79,9 @@ two numbers greater than 0.')
         BaseWave._set_tuple_value(self, field, value, pred, err, f)
 
     @property
-    def x_vect(self):
-        """a vector with the discretization of space in the x direction"""
-        return self._data['space'][0][0,:]
-
-    @property
-    def y_vect(self):
-        return self._data['space'][1][:,0]
-
-    @property
     def xy_grid(self):
         """a tuple with the grid of x and y values"""
-        return self._data['space']
-
-    @property
-    def time_vect(self):
-        """a vector of the discretization of the time"""
-        return self._data['time']
+        return self._data['space'][2]
 
     @property
     def boundary_condition(self):
@@ -145,8 +134,8 @@ position should be numbers.')
         # distance from a point (x, y) to the position of the source.
 
         # Calculate maximum distance
-        dx = self._data['space'][0] - pos[0]
-        dy = self._data['space'][1] - pos[1]
+        dx = self._data['space'][2][0] - pos[0]
+        dy = self._data['space'][2][1] - pos[1]
         dist = np.sqrt(dx ** 2 + dy ** 2)
         d_max = np.max(dist)
 
@@ -280,7 +269,10 @@ should not have been reached.')
         """
 
         # Discretize time
-        BaseWave._get_time_or_space(self, 'time')
+        self._data['time'] = \
+            BaseWave._discretize(self, self.time_boundary,
+                                 self.dt, self.time_vect)
+        self.time_boundary = (self.time_vect[0], self.time_vect[-1])
 
         # Discretize space
         if None in [self.dx, self.space_boundary]:
@@ -291,7 +283,9 @@ should not have been reached.')
         flip_and_hstack = lambda u: (np.hstack((-np.flip(u[1:]), u)))
         xs = flip_and_hstack(np.arange(0, Lx, self.dx, dtype = np.float32))
         ys = flip_and_hstack(np.arange(0, Ly, self.dx, dtype = np.float32))
-        self._data['space'] = np.meshgrid(xs, ys)
+        self._data['space'][0] = xs
+        self._data['space'][1] = ys
+        self._data['space'][2] = np.meshgrid(xs, ys)
 
         # Prepare sources
         self._sources_to_eval = []
