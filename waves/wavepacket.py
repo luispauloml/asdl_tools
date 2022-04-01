@@ -63,10 +63,20 @@ class Wavepacket(BaseWave):
 
     @space_boundary.setter
     def space_boundary(self, value):
-        pred = lambda x: isinstance(x, numbers.Number)
-        err = 'The limits of the space should be numbers.'
-        BaseWave._set_tuple_value(self, '_xlim', value, pred,
-                                  err, lambda x: x)
+        if value is None:
+            self._xlim = None
+            return
+
+        # Recursively try again
+        if not isinstance(value, tuple):
+            self.space_boundary = (0, value)
+            return
+
+        for v in value:
+            if not isinstance(v, numbers.Number):
+                raise TypeError('the boundaries should be numbers')
+
+        self._xlim = (value[0], value[1])
 
     @property
     def dispersion(self):

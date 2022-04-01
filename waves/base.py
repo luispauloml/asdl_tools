@@ -121,30 +121,9 @@ class MeasuredData(object):
 class BaseWave(MeasuredData):
     """Base class to define Wavepacket and Surface"""
 
-    def _set_tuple_value(self, field, value,
-                         predicate, err, apply_to_values):
-        dict_ = self.__dict__
-
-        if value is None:
-            dict_[field] = None
-            return
-
-        if not isinstance(value, tuple):
-            self._set_tuple_value(field, (0, value), predicate,
-                                  err, apply_to_values)
-        else:
-            new_values = []
-            # Use range to guarantee that only two values will be accounted for
-            for i in range(0, 2):
-                if not predicate(value[i]):
-                    raise err
-                else:
-                    new_values.append(apply_to_values(value[i]))
-
-            dict_[field] = (new_values[0], new_values[1])
-
     @property
     def space_boundary(self):
+        """the limits of the space domain"""
         raise NotImplementedError
 
     @space_boundary.setter
@@ -157,10 +136,25 @@ class BaseWave(MeasuredData):
         return self._tlim
 
     @time_boundary.setter
-    def time_boundary(self, T):
-        pred = lambda x: isinstance(x, numbers.Number)
-        err = TypeError('The limits of for the time should be numbers.')
-        self._set_tuple_value('_tlim', T, pred, err, lambda x: x)
+    def time_boundary(self, value):
+        if value is None:
+            self._tlim = None
+            return
+
+        # Recursively try again
+        if not isinstance(value, tuple):
+            self.time_boundary = (0, value)
+            return
+
+        new_values = []
+        for v in value:
+            if not isinstance(v, numbers.Number):
+                raise TypeError('the values for time boundary should \
+be numbers')
+            else:
+                new_values.append(v)
+        else:
+            self._tlim = (new_values[0], new_values[1])
 
     @property
     def normalize(self):

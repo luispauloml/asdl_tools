@@ -66,17 +66,29 @@ class Surface(BaseWave):
 
     @property
     def space_boundary(self):
-        """the limits of the surface"""
         return self._xylims
 
     @space_boundary.setter
     def space_boundary(self, value):
-        err = TypeError('the size of the surface shoulde be a tuple of \
-two numbers greater than 0.')
-        field = '_xylims'
-        pred = lambda x: isinstance(x, numbers.Number) and x > 0
-        f = lambda x: (-x/2, x/2)
-        BaseWave._set_tuple_value(self, field, value, pred, err, f)
+        if value is None:
+            self._xylims = None
+            return
+
+        # Recursively try again
+        if not isinstance(value, tuple):
+            self.space_boundary = (value, value)
+            return
+
+        new_values = []
+        for v in value:
+            if not isinstance(v, numbers.Number):
+                raise TypeError('the values for space boundaries should \
+be numbers')
+            else:
+                new_values.append(v)
+        else:
+            self._xylims = ((-new_values[0]/2, new_values[0]/2),
+                            (-new_values[1]/2, new_values[1]/2))
 
     @property
     def xy_grid(self):
