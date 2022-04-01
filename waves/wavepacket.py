@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+import collections.abc
 from . import utils
 from .base import BaseWave
 
@@ -78,17 +79,20 @@ class Wavepacket(BaseWave):
             self._disprel = []
             return
 
-        predicate = lambda f: callable(f)
-        err = '`disprel` should be a callable object, e.g., \
-a function of 1 argument, or a list of such elements.'
+        # Recursively try again
+        if not isinstance(disprels, collections.abc.Iterable):
+            self.dispersion = [disprels]
+            return
 
-        def err_if_none():
-            err = 'at least one dispersion relationship is need'
-            raise ValueError(err)
-
-        BaseWave._set_list_value(self,'_disprel',
-                                 disprels, predicate,
-                                 err, err_if_none)
+        new_list = []
+        for value in disprels:
+            if not callable(value):
+                raise TypeError('dispersion relationships should be \
+functions of one argument')
+            else:
+                new_list.append(value)
+        else:
+            self._disprel = new_list
 
     @property
     def spectrum(self):
@@ -97,14 +101,23 @@ a function of 1 argument, or a list of such elements.'
 
     @spectrum.setter
     def spectrum(self, freqs):
-        predicate = lambda f: isinstance(f, numbers.Number)
-        err = '`freqs` should be a number or an iterable, e.g. \
-a list, containing the frequency spectrum of the wave packet.'
-        err_if_none = lambda : None
+        if freqs is None:
+            self._freq_spectrum = []
+            return
 
-        BaseWave._set_list_value(self, '_freq_spectrum',
-                                 freqs, predicate,
-                                 err, err_if_none)
+        # Recursively try again
+        if not isinstance(freqs, collections.abc.Iterable):
+            self.spectrum = [freqs]
+            return
+
+        new_list = []
+        for value in freqs:
+            if not isinstance(value, numbers.Number):
+                raise TypeError('frequency should be a number')
+            else:
+                new_list.append(value)
+        else:
+            self._freq_spectrum = new_list
 
     @property
     def envelope(self):

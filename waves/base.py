@@ -175,23 +175,6 @@ class BaseWave(MeasuredData):
         else:
             self._normalize_flag = False
 
-    def _set_list_value(self, field, values, predicate, err, if_none):
-        dict_ = self.__dict__
-        dict_[field] = []
-        if isinstance(values, Iterable):
-            for v in values:
-                if not predicate(v):
-                    raise TypeError(err)
-                else:
-                    dict_[field].append(v)
-            return
-
-        elif values is None:
-            if_none()
-
-        else:
-            self._set_list_value(field, [values], predicate, err, if_none)
-
     def eval(self):
         raise NotImplementedError
 
