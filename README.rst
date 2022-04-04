@@ -16,7 +16,8 @@ the problems in wave propagation.
 Dependencies
 ~~~~~~~~~~~~
 
-* Numpy.
+* Numpy
+* Scipy
 
 
 Installation

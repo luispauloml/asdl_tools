@@ -19,5 +19,5 @@ setup(
     url='https://github.com/luispauloml/waves',
     license=license,
     packages=find_packages(),
-    install_requires=['numpy']
+    install_requires=['numpy', 'scipy']
 )
