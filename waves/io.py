@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+import scipy.io
 from .base import MeasuredData
 
 def loadcsv(file_name):
@@ -53,4 +54,55 @@ def loadcsv(file_name):
     obj.x_vect = coords[0][:,0]
     obj.y_vect = coords[1][0,:]
     obj.data = np.squeeze(np.stack(values, axis = 2))
+    return obj
+
+def loadmat(file_name):
+    """Load MAT file from MATLAB.
+
+    Reads a MAT file generated in MATLAB that contains information
+    from laser scan acquired using Junyoung's standard.  The MAT file
+    should contain `stc` matrix.  Optional ones are `x`, `real_x`,
+    `y`, `real_y`, and `rate`.
+
+    Parameters:
+    file_name : str
+        The path to the file to be read.
+
+    """
+    mat = scipy.io.loadmat(file_name)
+
+    obj = MeasuredData()
+    obj.data = mat['stc']
+    dx = None
+    dy = None
+    for key, val in mat.items():
+        if key in ['x', 'real_x']:
+            obj.x_vect = np.squeeze(val)
+        elif key in ['y', 'real_y']:
+            obj.y_vect = np.squeeze(val)
+        elif key == 'SR':
+            try:
+                obj.dx = float(val)
+            except:
+                pass
+        elif key == 'rate':
+            try:
+                obj.fs = float(val)
+            except:
+                pass
+
+    # Spatial steps from spatial data
+    if obj.dx is not None:
+        steps = [None, None]
+        for i, vect in enumerate([obj.x_vect, obj.y_vect]):
+            if vect is not None:
+                diff = np.diff(vect)
+                delta = np.average(diff)
+                if np.argwhere(abs(diff - delta) > 1e-6).size == 0:
+                    steps[i] = delta
+        if None not in steps:
+            if abs(steps[0] - steps[1]) < 1e-6:
+                steps = steps[0]
+        obj.dx = steps
+
     return obj
