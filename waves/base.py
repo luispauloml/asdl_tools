@@ -42,7 +42,10 @@ class MeasuredData(object):
     @property
     def fs(self):
         """the sampling frequency"""
-        return self._steps['time'][0]
+        if self._steps['time'] is None:
+            return None
+        else:
+            return self._steps['time'][0]
 
     @fs.setter
     def fs(self, value):
@@ -51,7 +54,10 @@ class MeasuredData(object):
     @property
     def dt(self):
         """the time step"""
-        return self._steps['time'][1]
+        if self._steps['time'] is None:
+            return None
+        else:
+            return self._steps['time'][1]
 
     @dt.setter
     def dt(self, value):
