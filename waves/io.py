@@ -106,3 +106,68 @@ def loadmat(file_name):
         obj.dx = steps
 
     return obj
+
+def savemat(file_name, obj, **kwargs):
+    """Save an MeasuredData object to MATLAB's MAT file.
+
+    Create a MAT file from a MesauredData object containing
+    two-dimensional data.  The values in the resulting MAT file
+    corresponds to the object as follows:
+    - Nx:   len(obj.x_vect)
+    - Ny:   len(obj.y_vect)
+    - rate: obj.fs
+    - stc:  obj.data or obj.data[:,:,0]
+    - x:    obj.x_vect
+    - y:    obj.y_vect
+
+    NOTE: only one page of obj.data will be saved.  If obj.data is a
+    3D matrix, the first page will be saved; if it is is a 2D matrix,
+    the whole data will be saved.
+
+    NOTE: if any value in obj is None, the corresponding value in the
+    MAT file will be zero.
+
+    Parameters:
+    file_name : str
+        Name of the .mat file.
+    obj :  MesauredData
+        MeasuredData object to be saved
+    **kwargs : dict
+        Optional arguments to be passed to `scipy.io.savemat`.  For
+        more info see `help(scipy.io.savemat)`.
+
+    """
+    if not isinstance(obj, MeasuredData):
+        raise TypeError('obj should be an instance of MeasuredData')
+
+    # Values that are int in Python (e.g. output of len), should be
+    # converted to float for MATLAB, and values numpy.float32 should
+    # be cast to numpy.float64
+    mdict = dict()
+    zip_ = [('Nx', obj.x_vect),
+            ('Ny', obj.y_vect),
+            ('rate', obj.fs),
+            ('stc', obj.data),
+            ('x', obj.x_vect),
+            ('y', obj.y_vect)]
+    for key, value in zip_:
+        if value is None:
+            mdict[key] = 0
+        else:
+            if isinstance(value, np.ndarray):
+                value = value.astype(np.float64)
+            if key in ['Nx', 'Ny']:
+                value = float(value.size)
+            elif key == 'rate':
+                # Just a garantee
+                value = float(value)
+            elif key == 'stc':
+                if len(value.shape) == 2:
+                    pass
+                elif len(value.shape) == 3:
+                    value = value[:,:,0]
+                else:
+                    raise ValueType('the date has incompatible dimensions')
+            mdict[key] = value
+
+    return scipy.io.savemat(file_name, mdict, **kwargs)
