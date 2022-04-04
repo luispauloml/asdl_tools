@@ -77,6 +77,12 @@ class MeasuredData(object):
         """the data contained in this object"""
         return self._data['results']
 
+    @data.setter
+    def data(self, values):
+        if not isinstance(values, np.ndarray):
+            raise TypeError('the values should be a numpy.nparray')
+        self._data['results'] = values
+
     def purge_data(self):
         """Delete the data stored in the object."""
         self._data = MeasuredData()._data
@@ -95,10 +101,30 @@ class MeasuredData(object):
         """a vector of the discretization of space in the x direction"""
         return self._data['space'][0]
 
+    @x_vect.setter
+    def x_vect(self, values):
+        err = TypeError('the values should be a 1D numpy.ndarray')
+        if not isinstance(values, np.ndarray):
+            raise err
+        if len(values.shape) != 1:
+            raise err
+
+        self._data['space'][0] = values
+
     @property
     def y_vect(self):
         """a vector of the discretization of space in the y direction"""
         return self._data['space'][1]
+
+    @y_vect.setter
+    def y_vect(self, values):
+        err = TypeError('the values should be a 1D numpy.ndarray')
+        if not isinstance(values, np.ndarray):
+            raise err
+        if len(values.shape) != 1:
+            raise err
+
+        self._data['space'][1] = values
 
     def save(self, file_name):
         """Save data from current object to a binary file.
