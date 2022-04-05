@@ -19,6 +19,7 @@ class MeasuredData(object):
     def __init__(self):
         self._data = {'space': [None, None], 'time': None, 'results': None}
         self._steps = {'time': None, 'space': None}
+        self.header = []
 
     def _set_steps(self, step, value):
         if isinstance(value, numbers.Number) or value is None:

@@ -17,7 +17,7 @@ def loadcsv(file_name):
 
     """
     file_handler = open(file_name, mode = 'rt')
-    header = []
+    header = ['-*- Data loaded from a CSV file -*-']
     data = []
 
     for line in csv.reader(file_handler, delimiter = ' ',
@@ -50,7 +50,7 @@ def loadcsv(file_name):
     values = arrays[2:]
 
     obj = MeasuredData()
-    obj.log = header
+    obj.header = header
     obj.x_vect = coords[0][:,0]
     obj.y_vect = coords[1][0,:]
     obj.data = np.squeeze(np.stack(values, axis = 2))
@@ -72,6 +72,7 @@ def loadmat(file_name):
     mat = scipy.io.loadmat(file_name)
 
     obj = MeasuredData()
+    obj.header = ['-*- Data loaded from MATLAB .mat file -*-']
     obj.data = mat['stc']
     dx = None
     dy = None
@@ -149,7 +150,8 @@ def savemat(file_name, obj, **kwargs):
             ('rate', obj.fs),
             ('stc', obj.data),
             ('x', obj.x_vect),
-            ('y', obj.y_vect)]
+            ('y', obj.y_vect),
+            ('header', obj.header)]
     for key, value in zip_:
         if value is None:
             mdict[key] = 0
