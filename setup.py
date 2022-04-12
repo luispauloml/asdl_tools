@@ -12,7 +12,7 @@ with open('LICENSE') as f:
 setup(
     name='waves',
     version='0.1.0',
-    description='Simple 1D and 2D waves',
+    description='Simple package to treat data from vibration experiments',
     long_description=readme,
     author='Luis Paulo Morais Lima',
     author_email='luispauloml@gmail.com',
