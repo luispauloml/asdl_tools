@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='waves',
-    version='0.1.0',
+    version='0.2.0',
     description='Simple package to treat data from vibration experiments',
     long_description=readme,
     author='Luis Paulo Morais Lima',
