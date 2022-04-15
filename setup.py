@@ -10,13 +10,13 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='waves',
+    name='asdl_tools',
     version='0.2.0',
-    description='Simple package to treat data from vibration experiments',
+    description='Tools used for experiments at ASDL',
     long_description=readme,
     author='Luis Paulo Morais Lima',
     author_email='luispauloml@gmail.com',
-    url='https://github.com/luispauloml/waves',
+    url='https://github.com/luispauloml/asdl_tools',
     license=license,
     packages=find_packages(),
     install_requires=['numpy', 'scipy']
