@@ -78,9 +78,9 @@ def loadmat(file_name):
     dy = None
     for key, val in mat.items():
         if key in ['x', 'real_x']:
-            obj.x_vect = np.squeeze(val)
+            obj.x_vect = np.atleast_1d(np.squeeze(val))
         elif key in ['y', 'real_y']:
-            obj.y_vect = np.squeeze(val)
+            obj.y_vect = np.atleast_1d(np.squeeze(val))
         elif key == 'SR':
             try:
                 obj.dx = float(val)
@@ -96,7 +96,7 @@ def loadmat(file_name):
     if obj.dx is not None:
         steps = [None, None]
         for i, vect in enumerate([obj.x_vect, obj.y_vect]):
-            if vect is not None:
+            if vect is not None and vect.size > 1:
                 diff = np.diff(vect)
                 delta = np.average(diff)
                 if np.argwhere(abs(diff - delta) > 1e-6).size == 0:
@@ -104,7 +104,7 @@ def loadmat(file_name):
         if None not in steps:
             if abs(steps[0] - steps[1]) < 1e-6:
                 steps = steps[0]
-        obj.dx = steps
+            obj.dx = steps
 
     return obj
 
