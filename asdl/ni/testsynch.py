@@ -81,6 +81,59 @@ def run_test(device_name, input_channel, output_channel,
     return (product_type, data_out, data_in)
 
 
+def analyze_results(data_out, data_in, plot_flag=False):
+    """Analyze the results of the tests.
+
+    It detects the position of the rising edges in `data_in` and
+    `data_out`, takes the difference between them and calculates a few
+    statistical informations.
+
+    Returns a dictionary whose fields and values are:
+    - 'avg': a float, the average,
+    - 'max': a int, the maximum value,
+    - 'min': a int, the minimum value,
+    - 'std': a float, the standard deviation
+    - 'edges': a 1D numpy.ndarray, the positions of the edges for
+      `data_out` and `data_in`, in this order.
+
+    Parameters:
+    data_out: 1D numpy.ndarray
+        The data written to the device which will be used as
+        reference.  Should be of shape (N,).
+    data_in: 2D numpy.ndarray
+        The data read from the device.  Should be of shape
+        (N,M).
+    plot_flag: bool, optional, default: False
+        Controls the plotting of the results.  If True, plots a
+        histogram for the results.
+
+    """
+    # Detecting edges
+    data = np.hstack((np.expand_dims(data_out, 1), data_in))
+    nrows, ncols = data.shape
+    edges = np.zeros((ncols,), dtype=int)
+    for j in range(ncols):
+        signal = data[:, j] > 0.5
+        for i in range(nrows - 1):
+            if (not signal[i]) and signal[i+1]:
+                edges[j] = i + 1
+                break
+    delta = edges[1:] - edges[0]
+    results = {'avg': np.average(delta),
+               'max': np.max(delta),
+               'min': np.min(delta),
+               'std': np.std(delta),
+               'edges': edges}
+
+    if plot_flag:
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.hist(delta)
+
+    return results
+
+
 def _make_arg_parser():
     import argparse
 
@@ -128,11 +181,34 @@ if __name__ == '__main__':
         run_test(args.device, args.input_channel, args.output_channel,
                  int(args.runs), float(args.rate))
 
-    # Output
     header = f"""Date: {time.strftime("%a, %d %b %Y %H:%M:%S %z", time.localtime())}
 Product: {product_type}
-Sampling rate: {float(args.rate)}
+Sampling rate (samples/second): {float(args.rate)}
 Number of runs: {int(args.runs)}"""
+
+    if args.plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(data_out, label='Generated data')
+        plt.plot(data_in[:, -1], label='Measured signal')
+        plt.legend()
+        plt.title(f"Last run: #{args.runs}")
+        plt.xlabel('Sample number')
+        plt.ylabel('Amplitude')
+        plt.grid(True)
+
+    if args.analysis:
+        results = analyze_results(data_out, data_in, args.plot)
+        header += f"""
+Average (samples): {results['avg']}
+Standard deviation (samples): {results['std']}
+Maximum delay (samples): {results['max']}
+Minimum delay (samples): {results['min']}"""
+
+    if args.plot:
+        # Because the analysis may also create a plot, wait until
+        # after it to call plt.show
+        plt.show()
 
     if args.file == '-':
         file_name = sys.stdout
@@ -145,16 +221,3 @@ Number of runs: {int(args.runs)}"""
                np.hstack((np.expand_dims(data_out, 1), data_in)),
                delimiter=',',
                header=header)
-
-    if args.plot:
-        import matplotlib.pyplot as plt
-
-        plt.plot(data_out, label='Generated data')
-        plt.plot(data_in[:, -1], label='Measured signal')
-        plt.legend()
-        plt.title(f"Last run: #{args.runs}")
-        plt.xlabel('Sample number')
-        plt.ylabel('Amplitude')
-        plt.grid(True)
-        plt.show()
-
