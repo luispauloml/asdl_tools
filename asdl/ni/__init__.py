@@ -25,6 +25,9 @@ class Task:
     For documentation on `nidaqmx`, see:
     <https://nidaqmx-python.readthedocs.io/>
 
+    NOTE: unless otherwise stated, every method is first executed on
+    the write task frist, and on the read task second.
+
     """
 
     def __init__(self):
@@ -54,8 +57,7 @@ class Task:
     def start(self):
         """Start tasks.
 
-        It calls `start` method first on the write task, and then on
-        the read task.
+        It calls `start` method.
 
         """
         # The order of calling is relevant because, should reading and
@@ -69,8 +71,7 @@ class Task:
     def stop(self):
         """Stop tasks.
 
-        It calls `stop` method first on the write task, and then on the
-        read task.
+        It calls `stop` method.
 
         """
         self.write_task.stop()
@@ -110,6 +111,5 @@ class Task:
     cfg_samp_clk_timing.__doc__ = \
         nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing.__doc__
     cfg_samp_clk_timing.__doc__ += """
-        NOTE: this method simply dispatches from `asdl.ni.Task` to
-        `nidaqmx.Task` and runs this method first on the write task, and the
-        on the read task."""
+        NOTE: this method simply dispatches the arguments from `asdl.ni.Task`
+        to `nidaqmx.Task.timing`."""
