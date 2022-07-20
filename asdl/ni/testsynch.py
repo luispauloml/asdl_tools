@@ -10,7 +10,7 @@ import time
 
 
 def run_test(device_name, input_channel, output_channel,
-             number_of_runs=10, samp_rate=51200, ):
+             number_of_runs=10, samp_rate=51200, quiet_flag=True):
     """Run tests assess the delay in synchronized tasks.
 
     Configure and synchronize two tasks to assess the delay between
@@ -38,6 +38,9 @@ def run_test(device_name, input_channel, output_channel,
         Number of time the test should be repeated.
     samp_rate: float, optional, default: 51200
         The sampling rate of the tasks in samples/second.
+    quiet_flag: bool, optional, default: True
+        Control the display of messages of progress that are sent to
+        `stderr`.
 
     NOTES:
     - The read and write tasks use voltage channels.
@@ -70,8 +73,9 @@ def run_test(device_name, input_channel, output_channel,
         data_in = np.empty((nsamples, number_of_runs))
 
         for i in range(number_of_runs):
-            print(f'\rRun {i+1}/{number_of_runs} ... ',
-                  file=sys.stderr, flush=True, end='')
+            if not quiet_flag:
+                print(f'\rRun {i+1}/{number_of_runs} ... ',
+                      file=sys.stderr, flush=True, end='')
 
             task.write_task.write(data_out, auto_start=False)
             task.synchronize()
@@ -80,7 +84,8 @@ def run_test(device_name, input_channel, output_channel,
 
             task.stop()
 
-        print(f'done', file=sys.stderr, flush=True)
+        if not quiet_flag:
+            print(f'done', file=sys.stderr, flush=True)
 
     return (product_type, data_out, data_in)
 
@@ -140,7 +145,6 @@ def analyze_results(data_out, data_in, plot_flag=False):
 
 
 def _make_arg_parser():
-
     parser = argparse.ArgumentParser()
     parser.add_argument('device', help='the name of the device',)
     parser.add_argument('input_channel', help='name of the input channel')
@@ -153,6 +157,10 @@ def _make_arg_parser():
                         help="plot results for the last run. \
 If '-a' is also passed, plot a histogram too.",
                         action='store_true')
+
+    parser.add_argument('-q', '--quiet',
+                       help='suppress messages of progress of the task',
+                       action='store_true')
 
     parser.add_argument('--file',
                         help="save the data to a CSV file; \
@@ -177,10 +185,9 @@ if __name__ == '__main__':
     arg_parser = _make_arg_parser()
     args = arg_parser.parse_args()
 
-
     product_type, data_out, data_in = \
         run_test(args.device, args.input_channel, args.output_channel,
-                 int(args.runs), float(args.rate))
+                 int(args.runs), float(args.rate), args.quiet)
 
     header = f"""Date: {time.strftime("%a, %d %b %Y %H:%M:%S %z", time.localtime())}
 Product: {product_type}
