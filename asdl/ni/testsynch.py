@@ -131,7 +131,10 @@ def analyze_results(data_out, data_in, plot_flag=False):
 
     if plot_flag:
         plt.figure()
-        plt.hist(delta)
+        plt.hist(delta, density=True)
+        plt.xlabel('Delay (samples)')
+        plt.ylabel('Frequency')
+        plt.title('Frequency distribution of the delay between read and write tasks')
 
     return results
 
