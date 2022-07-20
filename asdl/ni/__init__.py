@@ -99,3 +99,17 @@ class Task:
             self.read_task.triggers.start_trigger.term)
 
         self.write_task.start()
+
+    def cfg_samp_clk_timing(self, *args, **kwargs):
+        timing = self.write_task.timing
+        timing.cfg_samp_clk_timing(*args, **kwargs)
+
+        timing = self.read_task.timing
+        timing.cfg_samp_clk_timing(*args, **kwargs)
+
+    cfg_samp_clk_timing.__doc__ = \
+        nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing.__doc__
+    cfg_samp_clk_timing.__doc__ += """
+        NOTE: this method simply dispatches from `asdl.ni.Task` to
+        `nidaqmx.Task` and runs this method first on the write task, and the
+        on the read task."""
