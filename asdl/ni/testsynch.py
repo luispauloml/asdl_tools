@@ -1,5 +1,13 @@
 """Make test runs to asses the delay in synchronized tasks."""
 
+from . import Task
+import argparse
+import nidaqmx
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import time
+
 
 def run_test(device_name, input_channel, output_channel,
              number_of_runs=10, samp_rate=51200, ):
@@ -37,10 +45,6 @@ def run_test(device_name, input_channel, output_channel,
       -/+10.0 volts, respectively.
 
     """
-
-    import nidaqmx
-    from . import Task
-
     # Generate enough data for 1 second of acquisition
     data_out = np.ones((int(samp_rate,)))
     data_out[0] = 0
@@ -126,8 +130,6 @@ def analyze_results(data_out, data_in, plot_flag=False):
                'edges': edges}
 
     if plot_flag:
-        import matplotlib.pyplot as plt
-
         plt.figure()
         plt.hist(delta)
 
@@ -135,7 +137,6 @@ def analyze_results(data_out, data_in, plot_flag=False):
 
 
 def _make_arg_parser():
-    import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument('device', help='the name of the device',)
@@ -173,9 +174,6 @@ if __name__ == '__main__':
     arg_parser = _make_arg_parser()
     args = arg_parser.parse_args()
 
-    import time
-    import sys
-    import numpy as np
 
     product_type, data_out, data_in = \
         run_test(args.device, args.input_channel, args.output_channel,
@@ -187,8 +185,6 @@ Sampling rate (samples/second): {float(args.rate)}
 Number of runs: {int(args.runs)}"""
 
     if args.plot:
-        import matplotlib.pyplot as plt
-
         plt.plot(data_out, label='Generated data')
         plt.plot(data_in[:, -1], label='Measured signal')
         plt.legend()
