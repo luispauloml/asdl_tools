@@ -122,7 +122,8 @@ def analyze_results(data_out, data_in, plot_flag=False):
     nrows, ncols = data.shape
     edges = np.zeros((ncols,), dtype=int)
     for j in range(ncols):
-        signal = data[:, j] > 0.5
+        min_val, max_val = np.min(data[:, j]), np.max(data[:, j])
+        signal = data[:, j] > (max_val - min_val) / 2 + min_val
         for i in range(nrows - 1):
             if (not signal[i]) and signal[i+1]:
                 edges[j] = i + 1
