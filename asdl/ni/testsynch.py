@@ -3,14 +3,13 @@
 from . import Task
 import argparse
 import nidaqmx
-import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import time
 
 
 def run_test(device_name, input_channel, output_channel,
-             number_of_runs=10, samp_rate=51200, quiet_flag=True):
+             number_of_runs=10, samp_rates=[51200], quiet_flag=True):
     """Run tests assess the delay in synchronized tasks.
 
     Configure and synchronize two tasks to assess the delay between
@@ -20,12 +19,13 @@ def run_test(device_name, input_channel, output_channel,
     from `input_channel`.  Both channels should be in the same device
     named `device_name`.
 
-    Returns a tuple `(product_type, data_out, data_in)`, where
-    `product_type` is the type of the device, e.g. 'USB-4431',
-    `data_out` is the data written to the device, and `data_in` is the
-    signal read from it.  Both `data_out` and `data_in` are
-    `numpy.ndarray` whose shapes are (round(samp_rate),) and
-    (round(samp_rate), number_of_runs), respectively. '.
+    Returns a dict with a keys 'product_type' and the sampling rates:
+    - 'product_type' contains the type of the device, e.g. 'USB-4431', and
+    - sampling rates key contain a tuple `(data_out, data_in)`, where
+      `data_out` is the data written to the device, and `data_in` is
+      the signal read from it.  Both `data_out` and `data_in` are
+      `numpy.ndarray` whose shapes are (round(samp_rate),) and
+      (round(samp_rate), number_of_runs), respectively. '.
 
     Parameters:
     device_name: string
@@ -36,8 +36,8 @@ def run_test(device_name, input_channel, output_channel,
         The name of the output channel.
     number_of_runs: int, optional, default: 10
         Number of time the test should be repeated.
-    samp_rate: float, optional, default: 51200
-        The sampling rate of the tasks in samples/second.
+    samp_rates: list, optional, default: [51200]
+        A list of the sampling rate of the tasks in samples/second.
     quiet_flag: bool, optional, default: True
         Control the display of messages of progress that are sent to
         `stderr`.
@@ -48,18 +48,13 @@ def run_test(device_name, input_channel, output_channel,
       -/+10.0 volts, respectively.
 
     """
-    # Generate enough data for 1 second of acquisition
-    data_out = np.ones((int(samp_rate,)))
-    data_out[0] = 0
-    nsamples = len(data_out)
-
     devices = nidaqmx.system.System.local().devices
     try:
         device = devices[device_name]
     except KeyError:
         raise ValueError(f'device not found: {device_name}')
 
-    product_type = f'{device.product_type}'
+    results = {'product_type': f'{device.product_type}'}
 
     with Task() as task:
         task.write_task.ao_channels.add_ao_voltage_chan(
@@ -68,29 +63,52 @@ def run_test(device_name, input_channel, output_channel,
         task.read_task.ai_channels.add_ai_voltage_chan(
             f'{device_name}/{input_channel}',
             min_val=-10, max_val=10)
-        task.cfg_samp_clk_timing(samp_rate, samps_per_chan=nsamples)
 
-        data_in = np.empty((nsamples, number_of_runs))
+        # Try all sampling rates before the actual runs
+        # Because `nidaqmx` error messages are very informative,
+        # don't try and catch, keep calm and let it crash
+        for samp_rate in samp_rates:
+            # Use continuous acquisition to avoid warnings from nidaqmx
+            task.cfg_samp_clk_timing(samp_rate, samps_per_chan=5, \
+                sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS)
 
-        for i in range(number_of_runs):
-            if not quiet_flag:
-                print(f'\rRun {i+1}/{number_of_runs} ... ',
-                      file=sys.stderr, flush=True, end='')
-
-            task.write_task.write(data_out, auto_start=False)
+            # Seems like NI USB-4463 does not synchronize if there is
+            # nothing to write, and it also does not check invalid
+            # sampling rate before synchronizing, so let us include
+            # these next two statements
+            task.write_task.write(np.ones((5,)), auto_start=False)
             task.synchronize()
-
-            data_in[:, i] = task.read_task.read(nsamples)
-
             task.stop()
 
-        if not quiet_flag:
-            print(f'done', file=sys.stderr, flush=True)
+        # Actual runs
+        for samp_rate in samp_rates:
+            data_out = np.ones((int(samp_rate,)))
+            data_out[0] = 0
+            nsamples = len(data_out)
+            task.cfg_samp_clk_timing(samp_rate, samps_per_chan=nsamples)
 
-    return (product_type, data_out, data_in)
+            data_in = np.empty((nsamples, number_of_runs))
+            for i in range(number_of_runs):
+                task.write_task.write(data_out, auto_start=False)
+                task.synchronize()
+
+                if not quiet_flag:
+                    print(f'\rRun {i+1}/{number_of_runs} @ {samp_rate} \
+samples/second ... ', file=sys.stderr, flush=True, end='')
+
+                data_in[:, i] = task.read_task.read(nsamples)
+
+                task.stop()
+
+            if not quiet_flag:
+                print(f'done', file=sys.stderr, flush=True)
+
+            results[samp_rate] = (data_out, data_in)
+
+    return results
 
 
-def analyze_results(data_out, data_in, plot_flag=False):
+def analyze_results(data_out, data_in):
     """Analyze the results of the tests.
 
     It detects the position of the rising edges in `data_in` and
@@ -135,96 +153,83 @@ def analyze_results(data_out, data_in, plot_flag=False):
                'std': np.std(delta),
                'edges': edges}
 
-    if plot_flag:
-        plt.figure()
-        plt.hist(delta, density=True)
-        plt.xlabel('Delay (samples)')
-        plt.ylabel('Frequency')
-        plt.title('Frequency distribution of the delay between read and write tasks')
-
     return results
 
 
-def _make_arg_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('device', help='the name of the device',)
-    parser.add_argument('input_channel', help='name of the input channel')
-    parser.add_argument('output_channel', help='name of the output channel')
-
-    parser.add_argument('-a', '--analysis', help='analyze the results',
+if __name__ == '__main__':
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('device', help='the name of the device',)
+    arg_parser.add_argument('input_channel', help='name of the input channel')
+    arg_parser.add_argument('output_channel', help='name of the output channel')
+    arg_parser.add_argument('-a', '--analysis', help='analyze the results',
                         action='store_true')
-
-    parser.add_argument('-p', '--plot',
-                        help="plot results for the last run. \
-If '-a' is also passed, plot a histogram too.",
-                        action='store_true')
-
-    parser.add_argument('-q', '--quiet',
+    arg_parser.add_argument('-q', '--quiet',
                        help='suppress messages of progress of the task',
                        action='store_true')
-
-    parser.add_argument('--file',
+    arg_parser.add_argument('--file',
                         help="save the data to a CSV file; \
 default is the product type of the device, e.g. 'USB-4431.csv; \
 if FILE is '-' send results to standard output instead")
-
-    parser.add_argument('--runs',
+    arg_parser.add_argument('--runs',
                         help='number of test runs; defualt is 10',
                         type=int,
                         default=10)
-
-    parser.add_argument('--rate',
+    arg_parser.add_argument('--rate',
                         help='sampling rate in samples/second; \
-default is 51200',
-                        type=float,
-                        default=51200.0)
-    return parser
-
-
-if __name__ == '__main__':
-    # Try parsing args before loading everything else
-    arg_parser = _make_arg_parser()
+default is 51200; can be a list of space-separated values',
+                        type=int,
+                        nargs='+',
+                        default=[51200])
     args = arg_parser.parse_args()
 
-    product_type, data_out, data_in = \
-        run_test(args.device, args.input_channel, args.output_channel,
-                 int(args.runs), float(args.rate), args.quiet)
+    run_results = run_test(args.device, args.input_channel,
+                            args.output_channel, args.runs,
+                            args.rate, args.quiet)
 
     header = f"""Date: {time.strftime("%a, %d %b %Y %H:%M:%S %z", time.localtime())}
-Product: {product_type}
-Sampling rate (samples/second): {float(args.rate)}
-Number of runs: {int(args.runs)}"""
+Product: {run_results['product_type']}
+Sampling rates (samples/second): {args.rate}
+Number of runs per sampling rate: {args.runs}"""
 
-    if args.plot:
-        plt.plot(data_out, label='Generated data')
-        plt.plot(data_in[:, -1], label='Measured signal')
-        plt.legend()
-        plt.title(f"Last run: #{args.runs}")
-        plt.xlabel('Sample number')
-        plt.ylabel('Amplitude')
-        plt.grid(True)
+    analysis_header = {'avg': [], 'std': [], 'max': [], 'min': []}
+
+    nsamples = int(np.min(args.rate))
+    values = np.zeros((nsamples, args.runs * len(args.rate) + 1))
+    values_header = []
+
+    for i, (rate, (data_out, data_in)) \
+        in enumerate(kv for kv in run_results.items()
+                     if kv[0] != 'product_type'):
+
+        for j in range(1, args.runs + 1):
+            values_header.append(f'{{rate={rate},run={j}}}')
+
+        if args.analysis:
+            analysis_results = analyze_results(data_out, data_in)
+            for key, value in (kv for kv in analysis_results.items()
+                               if kv[0] != 'edges'):
+                analysis_header[key].append(value)
+
+        if data_out.size == nsamples:
+            values_header.insert(0, '{rate=0,run=0}')
+            values[:, 0] = data_out
+
+        values[:, i*args.runs + 1 : (i+1)*args.runs + 1] = data_in[:nsamples, :]
 
     if args.analysis:
-        results = analyze_results(data_out, data_in, args.plot)
         header += f"""
-Average (samples): {results['avg']}
-Standard deviation (samples): {results['std']}
-Maximum delay (samples): {results['max']}
-Minimum delay (samples): {results['min']}"""
+Average (samples): {analysis_header['avg']}
+Standard deviation (samples): {analysis_header['std']}
+Minimum delay (samples): {analysis_header['min']}
+Maximum delay (samples): {analysis_header['max']}"""
 
-    if args.plot:
-        # Because the analysis may also create a plot, wait until
-        # after it to call plt.show
-        plt.show()
+    header += '\n' + ' '.join(values_header)
 
     if args.file == '-':
         file_name = sys.stdout
     elif args.file is None:
-        file_name = product_type + '.csv'
+        file_name = run_results['product_type'] + '.csv'
     else:
         file_name = args.file
 
-    np.savetxt(file_name,
-               np.hstack((np.expand_dims(data_out, 1), data_in)),
-               delimiter=',',
-               header=header)
+    np.savetxt(file_name, values, header=header)
