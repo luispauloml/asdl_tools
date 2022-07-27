@@ -30,6 +30,32 @@ class Task:
 
     """
 
+    def _catch_daqerror(funcs, error_type, error_code=None):
+        """Catch erros coming from DAQmx.
+
+        Catches one error of type `error_type`, or raise it otherwsie.
+        If a second error, it will be raisen.  If `error_code` is
+        given and the caught error's code is not equal to it, the
+        error will always be risen.
+
+        """
+        count = 0
+        for i, func in enumerate(funcs):
+            try:
+                func()
+            except error_type as e:
+                if error_code is None:
+                    count += 1
+                else:
+                    if e.error_code == error_code:
+                        count += 1
+                    else:
+                        raise e
+                if count >= 2:
+                    raise e
+                else:
+                    pass
+
     def __init__(self):
         self.write_task = nidaqmx.Task()
         self.read_task = nidaqmx.Task()
@@ -65,8 +91,9 @@ class Task:
         # configure to wait for a trigger from the read task,
         # therefore it has to start first and wait for the read task
         # to be started.
-        self.write_task.start()
-        self.read_task.start()
+        Task._catch_daqerror([self.write_task.start, self.read_task.start],
+                     nidaqmx.DaqError,
+                     nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
     def stop(self):
         """Stop tasks.
@@ -74,8 +101,9 @@ class Task:
         It calls `stop` method.
 
         """
-        self.write_task.stop()
-        self.read_task.stop()
+        Task._catch_daqerror([self.write_task.stop, self.read_task.stop],
+                             nidaqmx.DaqError,
+                             nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
     def synchronize(self):
         """Synchronize read and write tasks.
