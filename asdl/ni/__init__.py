@@ -1,6 +1,7 @@
 """A module to handle NI-DAQmx write and read tasks."""
 
 import nidaqmx
+import warnings
 
 
 class Task:
@@ -56,6 +57,27 @@ class Task:
                 else:
                     pass
 
+    def _catch_daqwarning(funcs, warning_category):
+        """Catch warnings coming from DAQmx.
+
+        Catches warnings of category `warning_category`.  If two or
+        more warnings are caught, it issues the second one warning.
+
+        """
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            for func in funcs:
+                func()
+
+        count = 0
+        for warning in caught_warnings:
+            if issubclass(warning.category, warning_category):
+                count += 1
+                if count >= 2:
+                    warnings.warn(warning.message, warning.category)
+                break
+            else:
+                warnings.warn(warning.message, warning.category)
+
     def __init__(self):
         self.write_task = nidaqmx.Task()
         self.read_task = nidaqmx.Task()
@@ -77,8 +99,8 @@ class Task:
         the read task.
 
         """
-        self.write_task.close()
-        self.read_task.close()
+        Task._catch_daqwarning([self.write_task.close, self.read_task.close],
+                               nidaqmx.DaqResourceWarning)
 
     def start(self):
         """Start tasks.
