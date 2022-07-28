@@ -153,10 +153,48 @@ class Task:
 
         self.write_task.start()
 
+
+class SingleDeviceExperiment(Task):
+    def __init__(self, device_name):
+        Task.__init__(self)
+
+        devices = [device
+                   for device in nidaqmx.system.System.local().devices
+                   if device.name == device_name]
+        if devices == []:
+            raise ValueError(f"device not found: '{device_name}'")
+        elif len(devices) > 1:
+            raise SystemError(f"there is more then one device '{device_name}")
+        else:
+            self._device = devices[0]
+
+    @property
+    def device(self):
+        return self._device
+
+    @property
+    def ai_channels(self):
+        return self.read_task.ai_channels
+
+    @property
+    def ao_channels(self):
+        return self.write_task.ao_channels
+
+    def add_ai_voltage_chan(self, *args, **kwargs):
+        return self.ai_channels.add_ai_voltage_chan(*args, **kwargs)
+
+    def add_ao_voltage_chan(self, *args, **kwargs):
+        return self.ao_channels.add_ao_voltage_chan(*args, **kwargs)
+
+    def write(self, *args, **kwargs):
+        return self.write_task.write(*args, **kwargs)
+
+    def read(self, *args, **kwargs):
+        return self.read_task.read(*args, **kwargs)
+
     def cfg_samp_clk_timing(self, *args, **kwargs):
         timing = self.write_task.timing
         timing.cfg_samp_clk_timing(*args, **kwargs)
-
         timing = self.read_task.timing
         timing.cfg_samp_clk_timing(*args, **kwargs)
 
