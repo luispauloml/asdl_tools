@@ -33,12 +33,12 @@ class Task:
 
     @staticmethod
     def _catch_daqerror(funcs, error_type, error_code=None):
-        """Catch erros coming from DAQmx.
+        """Catch errors coming from DAQmx.
 
-        Catches one error of type `error_type`, or raise it otherwsie.
-        If a second error, it will be raisen.  If `error_code` is
-        given and the caught error's code is not equal to it, the
-        error will always be risen.
+        Catches one error of type `error_type`, or raise it otherwise.
+        If a second error is caught, it will be risen.  If
+        `error_code` is given and the error's code is not equal to it,
+        the error will be risen.
 
         """
         count = 0
@@ -63,7 +63,7 @@ class Task:
         """Catch warnings coming from DAQmx.
 
         Catches warnings of category `warning_category`.  If two or
-        more warnings are caught, it issues the second one warning.
+        more warnings are caught, it issues the second warning.
 
         """
         with warnings.catch_warnings(record=True) as caught_warnings:

@@ -19,9 +19,9 @@ def run_test(device_name, input_channel, output_channel,
     from `input_channel`.  Both channels should be in the same device
     named `device_name`.
 
-    Returns a dict with a keys 'product_type' and the sampling rates:
+    Returns a dict with keys 'product_type' and the sampling rates:
     - 'product_type' contains the type of the device, e.g. 'USB-4431', and
-    - sampling rates key contain a tuple `(data_out, data_in)`, where
+    - sampling rate keys contain a tuple `(data_out, data_in)`, where
       `data_out` is the data written to the device, and `data_in` is
       the signal read from it.  Both `data_out` and `data_in` are
       `numpy.ndarray` whose shapes are (round(samp_rate),) and
