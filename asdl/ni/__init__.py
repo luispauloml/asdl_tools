@@ -31,6 +31,7 @@ class Task:
 
     """
 
+    @staticmethod
     def _catch_daqerror(funcs, error_type, error_code=None):
         """Catch erros coming from DAQmx.
 
@@ -57,6 +58,7 @@ class Task:
                 else:
                     pass
 
+    @staticmethod
     def _catch_daqwarning(funcs, warning_category):
         """Catch warnings coming from DAQmx.
 
