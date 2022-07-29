@@ -2,7 +2,24 @@
 
 import nidaqmx
 import warnings
+import functools
 
+
+def _dispatch(target_func, func_name=None):
+    def decorator(func):
+        @functools.wraps(target_func)
+        def worker(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        # Add message to __doc__
+        if func_name is not None:
+            worker.__doc__ += f"""
+
+        Note: this method dispatches to `{func_name}`.
+        """
+
+        return worker
+    return decorator
 
 class Task:
     """Creates two NI-DAQmx Tasks for writing and reading.
@@ -173,33 +190,41 @@ class SingleDeviceExperiment(Task):
         return self._device
 
     @property
+    @_dispatch(nidaqmx.Task.ai_channels)
     def ai_channels(self):
         return self.read_task.ai_channels
 
     @property
+    @_dispatch(nidaqmx.Task.ao_channels)
     def ao_channels(self):
         return self.write_task.ao_channels
 
+    @_dispatch(nidaqmx._task_modules.ai_channel_collection.\
+               AIChannelCollection.add_ai_voltage_chan,
+               'nidaqmx._task_modules.ai_channel_collection.\
+               AIChannelCollection.add_ai_voltage_chan')
     def add_ai_voltage_chan(self, *args, **kwargs):
         return self.ai_channels.add_ai_voltage_chan(*args, **kwargs)
 
+    @_dispatch(nidaqmx._task_modules.ao_channel_collection.\
+               AOChannelCollection.add_ao_voltage_chan,
+               'nidaqmx._task_modules.ao_channel_collection.\
+               AOChannelCollection.add_ao_voltage_chan')
     def add_ao_voltage_chan(self, *args, **kwargs):
         return self.ao_channels.add_ao_voltage_chan(*args, **kwargs)
 
+    @_dispatch(nidaqmx.Task.write, 'nidaqmx.Task.write')
     def write(self, *args, **kwargs):
         return self.write_task.write(*args, **kwargs)
 
+    @_dispatch(nidaqmx.Task.read, 'nidaqmx.Task.read')
     def read(self, *args, **kwargs):
         return self.read_task.read(*args, **kwargs)
 
+    @_dispatch(nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing,
+               'nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing')
     def cfg_samp_clk_timing(self, *args, **kwargs):
         timing = self.write_task.timing
         timing.cfg_samp_clk_timing(*args, **kwargs)
         timing = self.read_task.timing
         timing.cfg_samp_clk_timing(*args, **kwargs)
-
-    cfg_samp_clk_timing.__doc__ = \
-        nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing.__doc__
-    cfg_samp_clk_timing.__doc__ += """
-        NOTE: this method simply dispatches the arguments from `asdl.ni.Task`
-        to `nidaqmx.Task.timing`."""
