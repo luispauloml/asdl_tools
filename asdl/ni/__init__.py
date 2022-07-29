@@ -7,7 +7,67 @@ import functools
 
 __all__ = ['Task', 'SingleDeviceExperiment']
 
+
+def _catch_daqerror(funcs, error_type, error_code=None):
+    """Catch errors coming from DAQmx.
+
+    Catches one error of type `error_type`, or raise it otherwise.
+    If a second error is caught, it will be risen.  If
+    `error_code` is given and the error's code is not equal to it,
+    the error will be risen.
+
+    """
+    count = 0
+    for i, func in enumerate(funcs):
+        try:
+            func()
+        except error_type as e:
+            if error_code is None:
+                count += 1
+            else:
+                if e.error_code == error_code:
+                    count += 1
+                else:
+                    raise e
+            if count >= 2:
+                raise e
+            else:
+                pass
+
+
+def _catch_daqwarning(funcs, warning_category):
+    """Catch warnings coming from DAQmx.
+
+    Catches warnings of category `warning_category`.  If two or
+    more warnings are caught, it issues the second warning.
+
+    """
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        for func in funcs:
+            func()
+
+    count = 0
+    for warning in caught_warnings:
+        if issubclass(warning.category, warning_category):
+            count += 1
+            if count >= 2:
+                warnings.warn(warning.message, warning.category)
+            break
+        else:
+            warnings.warn(warning.message, warning.category)
+
+
 def _dispatch(target_func, func_name=None):
+    """Decorator to copy docstrings and attach a message to it.
+
+    Parameters:
+    target_func : function or method
+        Target function from which the docstring will be copied.
+    func_name : str or None, optional
+        The name of function written in the note at the end of the
+        docstring.  If None, no message is attached.
+
+    """
     def decorator(func):
         @functools.wraps(target_func)
         def worker(*args, **kwargs):
@@ -22,6 +82,7 @@ def _dispatch(target_func, func_name=None):
 
         return worker
     return decorator
+
 
 class Task:
     """Creates two NI-DAQmx Tasks for writing and reading.
@@ -49,56 +110,6 @@ class Task:
     the write task frist, and on the read task second.
 
     """
-
-    @staticmethod
-    def _catch_daqerror(funcs, error_type, error_code=None):
-        """Catch errors coming from DAQmx.
-
-        Catches one error of type `error_type`, or raise it otherwise.
-        If a second error is caught, it will be risen.  If
-        `error_code` is given and the error's code is not equal to it,
-        the error will be risen.
-
-        """
-        count = 0
-        for i, func in enumerate(funcs):
-            try:
-                func()
-            except error_type as e:
-                if error_code is None:
-                    count += 1
-                else:
-                    if e.error_code == error_code:
-                        count += 1
-                    else:
-                        raise e
-                if count >= 2:
-                    raise e
-                else:
-                    pass
-
-    @staticmethod
-    def _catch_daqwarning(funcs, warning_category):
-        """Catch warnings coming from DAQmx.
-
-        Catches warnings of category `warning_category`.  If two or
-        more warnings are caught, it issues the second warning.
-
-        """
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            for func in funcs:
-                func()
-
-        count = 0
-        for warning in caught_warnings:
-            if issubclass(warning.category, warning_category):
-                count += 1
-                if count >= 2:
-                    warnings.warn(warning.message, warning.category)
-                break
-            else:
-                warnings.warn(warning.message, warning.category)
-
     def __init__(self):
         self.write_task = nidaqmx.Task()
         self.read_task = nidaqmx.Task()
@@ -120,8 +131,8 @@ class Task:
         the read task.
 
         """
-        Task._catch_daqwarning([self.write_task.close, self.read_task.close],
-                               nidaqmx.DaqResourceWarning)
+        _catch_daqwarning([self.write_task.close, self.read_task.close],
+                          nidaqmx.DaqResourceWarning)
 
     def start(self):
         """Start tasks.
@@ -134,9 +145,9 @@ class Task:
         # configure to wait for a trigger from the read task,
         # therefore it has to start first and wait for the read task
         # to be started.
-        Task._catch_daqerror([self.write_task.start, self.read_task.start],
-                     nidaqmx.DaqError,
-                     nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
+        _catch_daqerror([self.write_task.start, self.read_task.start],
+                        nidaqmx.DaqError,
+                        nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
     def stop(self):
         """Stop tasks.
@@ -144,9 +155,9 @@ class Task:
         It calls `stop` method.
 
         """
-        Task._catch_daqerror([self.write_task.stop, self.read_task.stop],
-                             nidaqmx.DaqError,
-                             nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
+        _catch_daqerror([self.write_task.stop, self.read_task.stop],
+                        nidaqmx.DaqError,
+                        nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
     def synchronize(self):
         """Synchronize read and write tasks.
