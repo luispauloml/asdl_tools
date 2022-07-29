@@ -8,6 +8,7 @@ with open('README.md') as f:
 
 with open('LICENSE') as f:
     license = f.read()
+license = license.splitlines()[0]
 
 setup(
     name='asdl_tools',
