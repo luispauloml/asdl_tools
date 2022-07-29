@@ -172,6 +172,19 @@ class Task:
 
 
 class SingleDeviceExperiment(Task):
+    """Manage tasks for a single NI device.
+
+    This class makes `Task` more specific by working with a single
+    device.  Most of its methods are dispatched verbatim to their
+    corresponding counterparts in `nidaqmx.Task`.  Because of that,
+    the documentation for many methods are also the same as those in
+    `nidaqmx`.
+
+    Parameters:
+    device_name : str
+        The name of the device assigned to it by the NI-DAQmx driver.
+
+    """
     def __init__(self, device_name):
         Task.__init__(self)
 
@@ -187,6 +200,7 @@ class SingleDeviceExperiment(Task):
 
     @property
     def device(self):
+        """The device using in the tasks."""
         return self._device
 
     @property
