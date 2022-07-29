@@ -203,15 +203,57 @@ class SingleDeviceExperiment(Task):
                AIChannelCollection.add_ai_voltage_chan,
                'nidaqmx._task_modules.ai_channel_collection.\
                AIChannelCollection.add_ai_voltage_chan')
-    def add_ai_voltage_chan(self, *args, **kwargs):
-        return self.ai_channels.add_ai_voltage_chan(*args, **kwargs)
+    def add_ai_voltage_chan(self, physical_channel, *args, **kwargs):
+        # Try to take `physical_channel`  as an int
+        try:
+            ch = self.ai_channels.add_ai_voltage_chan(
+                f'{self.device.name}/ai{physical_channel}',
+                *args, **kwargs)
+
+        # If it fails, check the code error and try the actual value
+        # of `physical_channel`
+        except nidaqmx.DaqError as err:
+            codes = \
+                [nidaqmx.error_codes.DAQmxErrors.PHYSICAL_CHAN_DOES_NOT_EXIST,
+                 nidaqmx.error_codes.DAQmxErrors.PHYSICAL_CHANNEL_NOT_SPECIFIED]
+
+            if err.error_code in codes:
+                ch = self.ai_channels.add_ai_voltage_chan(
+                    physical_channel, *args, **kwargs)
+                return ch
+            else:
+                raise err
+
+        else:
+            return ch
 
     @_dispatch(nidaqmx._task_modules.ao_channel_collection.\
                AOChannelCollection.add_ao_voltage_chan,
                'nidaqmx._task_modules.ao_channel_collection.\
                AOChannelCollection.add_ao_voltage_chan')
-    def add_ao_voltage_chan(self, *args, **kwargs):
-        return self.ao_channels.add_ao_voltage_chan(*args, **kwargs)
+    def add_ao_voltage_chan(self, physical_channel, *args, **kwargs):
+        # Try to take `physical_channel`  as an int
+        try:
+            ch = self.ao_channels.add_ao_voltage_chan(
+                f'{self.device.name}/ao{physical_channel}',
+                *args, **kwargs)
+
+        # If it fails, check the code error and try the actual value
+        # of `physical_channel`
+        except nidaqmx.DaqError as err:
+            codes = \
+                [nidaqmx.error_codes.DAQmxErrors.PHYSICAL_CHAN_DOES_NOT_EXIST,
+                 nidaqmx.error_codes.DAQmxErrors.PHYSICAL_CHANNEL_NOT_SPECIFIED]
+
+            if err.error_code in codes:
+                ch = self.ao_channels.add_ao_voltage_chan(
+                    physical_channel, *args, **kwargs)
+                return ch
+            else:
+                raise err
+
+        else:
+            return ch
 
     @_dispatch(nidaqmx.Task.write, 'nidaqmx.Task.write')
     def write(self, *args, **kwargs):
