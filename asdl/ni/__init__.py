@@ -124,22 +124,13 @@ class Task:
         self.write_task.__del__()
         self.read_task.__del__()
 
+    @_dispatch(nidaqmx.Task.close, 'nidaqmx.Task.close')
     def close(self):
-        """Clear tasks.
-
-        It calls `close` method first on the write task, and then on
-        the read task.
-
-        """
         _catch_daqwarning([self.write_task.close, self.read_task.close],
                           nidaqmx.DaqResourceWarning)
 
+    @_dispatch(nidaqmx.Task.start, 'nidaqmx.Task.start')
     def start(self):
-        """Start tasks.
-
-        It calls `start` method.
-
-        """
         # The order of calling is relevant because, should reading and
         # writing tasks be synchronized, the write task will be
         # configure to wait for a trigger from the read task,
@@ -149,12 +140,8 @@ class Task:
                         nidaqmx.DaqError,
                         nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
+    @_dispatch(nidaqmx.Task.stop, 'nidaqmx.Task.stop')
     def stop(self):
-        """Stop tasks.
-
-        It calls `stop` method.
-
-        """
         _catch_daqerror([self.write_task.stop, self.read_task.stop],
                         nidaqmx.DaqError,
                         nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
