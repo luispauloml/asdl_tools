@@ -5,6 +5,8 @@ import warnings
 import functools
 
 
+__all__ = ['Task', 'SingleDeviceExperiment']
+
 def _dispatch(target_func, func_name=None):
     def decorator(func):
         @functools.wraps(target_func)
