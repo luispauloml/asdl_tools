@@ -19,5 +19,5 @@ setup(
     url='https://github.com/luispauloml/asdl_tools',
     license=license,
     packages=find_packages(),
-    install_requires=['numpy', 'scipy']
+    install_requires=['numpy', 'scipy', 'nidaqmx']
 )
