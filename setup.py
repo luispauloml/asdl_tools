@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='asdl_tools',
-    version='0.2.0',
+    version='0.0.0',
     description='Tools used for experiments at ASDL',
     long_description=readme,
     author='Luis Paulo Morais Lima',
