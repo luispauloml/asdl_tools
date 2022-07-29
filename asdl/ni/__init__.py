@@ -5,7 +5,7 @@ import warnings
 import functools
 
 
-__all__ = ['Task', 'SingleDeviceExperiment']
+__all__ = ['Task', 'SingleDevice']
 
 
 def _catch_daqerror(funcs, error_type, error_code=None):
@@ -171,7 +171,7 @@ class Task:
         self.write_task.start()
 
 
-class SingleDeviceExperiment(Task):
+class SingleDevice(Task):
     """Manage tasks for a single NI device.
 
     This class makes `Task` more specific by working with a single

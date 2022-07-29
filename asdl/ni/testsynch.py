@@ -1,6 +1,6 @@
 """Make test runs to asses the delay in synchronized tasks."""
 
-from . import SingleDeviceExperiment
+from . import SingleDevice
 import argparse
 import nidaqmx
 import numpy as np
@@ -48,7 +48,7 @@ def run_test(device_name, input_channel, output_channel,
       -/+10.0 volts, respectively.
 
     """
-    with SingleDeviceExperiment(device_name) as task:
+    with SingleDevice(device_name) as task:
         results = {'product_type': f'{task.device.product_type}'}
         task.write_task.ao_channels.add_ao_voltage_chan(
             f'{device_name}/{output_channel}',
