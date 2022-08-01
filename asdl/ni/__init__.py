@@ -142,7 +142,8 @@ class Task:
     @_dispatch(nidaqmx.Task.close, 'nidaqmx.Task.close')
     def close(self):
         _catch_excpetions([self.write_task.close, self.read_task.close],
-                          nidaqmx.DaqResourceWarning)
+                          nidaqmx.DaqResourceWarning,
+                          qtde=2)
 
     @_dispatch(nidaqmx.Task.start, 'nidaqmx.Task.start')
     def start(self):
