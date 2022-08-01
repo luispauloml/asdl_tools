@@ -9,13 +9,14 @@ import functools
 __all__ = ['Task', 'SingleDevice']
 
 
-def _catch_excpetions(funcs, except_type, except_code=None, args=(), kwargs={}):
+def _catch_excpetions(funcs, except_type, except_code=None,
+                      qtde=1, args=(), kwargs={}):
     """Catch errors or warnings coming from DAQmx.
 
-    Catches one error of type `exception_type`, or raise it otherwise.
-    If a second error is caught, it will be risen.  If `error_code` is
-    given and the error's code is not equal to it, the error will be
-    risen.
+    Catches errors of type `exception_type`, for `qtde` times or raise
+    it otherwise.  If `qtde + 1` errors are caught, the last one will
+    be risen.  If `error_code` is given and the error's code is not
+    equal to it, the error will be risen.
 
     Parameters:
     funcs : list
@@ -23,6 +24,8 @@ def _catch_excpetions(funcs, except_type, except_code=None, args=(), kwargs={}):
     except_type : type
         The type of exception to be caught.  Should be a subclasse of
         builtin.Exception or builtins.Warning.
+    qtde :  int, default=1
+        Number of erros to be caught before an exception is raised.
     except_code : int, defualt=None
         The error code.  If None, there will be no error code
         comparison.
@@ -47,7 +50,7 @@ def _catch_excpetions(funcs, except_type, except_code=None, args=(), kwargs={}):
                         count += 1
                     else:
                         raise e
-                if count >= 2:
+                if count > qtde:
                     raise e
                 else:
                     pass
@@ -59,7 +62,7 @@ def _catch_excpetions(funcs, except_type, except_code=None, args=(), kwargs={}):
         for warning in caught_warnings:
             if issubclass(warning.category, except_type):
                 count += 1
-                if count >= 2:
+                if count > qtde:
                     warnings.warn(warning.message, warning.category)
                 break
             else:
@@ -296,4 +299,4 @@ class SingleDevice(Task):
                            self.read_task.timing.cfg_samp_clk_timing],
                           nidaqmx.DaqError,
                           nidaqmx.error_codes.DAQmxErrors.INVALID_TASK,
-                          args, kwargs)
+                          args=args, kwargs=kwargs)
