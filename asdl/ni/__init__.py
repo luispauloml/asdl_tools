@@ -38,7 +38,20 @@ def _catch_excpetions(funcs, except_type, except_code=None,
 
     """
     count = 0
-    if issubclass(except_type, builtins.Exception):
+    if issubclass(except_type, builtins.Warning):
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            for func in funcs:
+                func()
+        for warning in caught_warnings:
+            if issubclass(warning.category, except_type):
+                count += 1
+                if count > qtde:
+                    warnings.warn(warning.message, warning.category)
+                    break
+            else:
+                warnings.warn(warning.message, warning.category)
+
+    elif issubclass(except_type, builtins.Exception):
         for i, func in enumerate(funcs):
             try:
                 func(*args, **kwargs)
@@ -54,19 +67,6 @@ def _catch_excpetions(funcs, except_type, except_code=None,
                     raise e
                 else:
                     pass
-
-    elif issubclass(except_type, builtins.Warning):
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            for func in funcs:
-                func()
-        for warning in caught_warnings:
-            if issubclass(warning.category, except_type):
-                count += 1
-                if count > qtde:
-                    warnings.warn(warning.message, warning.category)
-                break
-            else:
-                warnings.warn(warning.message, warning.category)
 
     else:
         raise TypeError(f'{except_type} is neither an Exception nor a Warning')
