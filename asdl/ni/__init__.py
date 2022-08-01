@@ -1,5 +1,6 @@
 """A module to handle NI-DAQmx write and read tasks."""
 
+import builtins
 import nidaqmx
 import warnings
 import functools
@@ -8,53 +9,64 @@ import functools
 __all__ = ['Task', 'SingleDevice']
 
 
-def _catch_daqerror(funcs, error_type, error_code=None):
-    """Catch errors coming from DAQmx.
+def _catch_excpetions(funcs, except_type, except_code=None, args=(), kwargs={}):
+    """Catch errors or warnings coming from DAQmx.
 
-    Catches one error of type `error_type`, or raise it otherwise.
-    If a second error is caught, it will be risen.  If
-    `error_code` is given and the error's code is not equal to it,
-    the error will be risen.
+    Catches one error of type `exception_type`, or raise it otherwise.
+    If a second error is caught, it will be risen.  If `error_code` is
+    given and the error's code is not equal to it, the error will be
+    risen.
+
+    Parameters:
+    funcs : list
+        A list of functions to be called.
+    except_type : type
+        The type of exception to be caught.  Should be a subclasse of
+        builtin.Exception or builtins.Warning.
+    except_code : int, defualt=None
+        The error code.  If None, there will be no error code
+        comparison.
+    args : tupe, default=()
+        A tuple with positional arguments to be passed to the
+        functions in `funcs`.
+    kwargs : dict, default={}
+        A dictionary with the keywork arguments to be passed to the
+        functions in `funcs`.
 
     """
     count = 0
-    for i, func in enumerate(funcs):
-        try:
-            func()
-        except error_type as e:
-            if error_code is None:
-                count += 1
-            else:
-                if e.error_code == error_code:
+    if issubclass(except_type, builtins.Exception):
+        for i, func in enumerate(funcs):
+            try:
+                func(*args, **kwargs)
+            except except_type as e:
+                if except_code is None:
                     count += 1
                 else:
+                    if e.error_code == except_code:
+                        count += 1
+                    else:
+                        raise e
+                if count >= 2:
                     raise e
-            if count >= 2:
-                raise e
+                else:
+                    pass
+
+    elif issubclass(except_type, builtins.Warning):
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            for func in funcs:
+                func()
+        for warning in caught_warnings:
+            if issubclass(warning.category, except_type):
+                count += 1
+                if count >= 2:
+                    warnings.warn(warning.message, warning.category)
+                break
             else:
-                pass
-
-
-def _catch_daqwarning(funcs, warning_category):
-    """Catch warnings coming from DAQmx.
-
-    Catches warnings of category `warning_category`.  If two or
-    more warnings are caught, it issues the second warning.
-
-    """
-    with warnings.catch_warnings(record=True) as caught_warnings:
-        for func in funcs:
-            func()
-
-    count = 0
-    for warning in caught_warnings:
-        if issubclass(warning.category, warning_category):
-            count += 1
-            if count >= 2:
                 warnings.warn(warning.message, warning.category)
-            break
-        else:
-            warnings.warn(warning.message, warning.category)
+
+    else:
+        raise TypeError(f'{except_type} is neither an Exception nor a Warning')
 
 
 def _dispatch(target_func, func_name=None):
@@ -126,7 +138,7 @@ class Task:
 
     @_dispatch(nidaqmx.Task.close, 'nidaqmx.Task.close')
     def close(self):
-        _catch_daqwarning([self.write_task.close, self.read_task.close],
+        _catch_excpetions([self.write_task.close, self.read_task.close],
                           nidaqmx.DaqResourceWarning)
 
     @_dispatch(nidaqmx.Task.start, 'nidaqmx.Task.start')
@@ -136,13 +148,13 @@ class Task:
         # configure to wait for a trigger from the read task,
         # therefore it has to start first and wait for the read task
         # to be started.
-        _catch_daqerror([self.write_task.start, self.read_task.start],
+        _catch_excpetions([self.write_task.start, self.read_task.start],
                         nidaqmx.DaqError,
                         nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
     @_dispatch(nidaqmx.Task.stop, 'nidaqmx.Task.stop')
     def stop(self):
-        _catch_daqerror([self.write_task.stop, self.read_task.stop],
+        _catch_excpetions([self.write_task.stop, self.read_task.stop],
                         nidaqmx.DaqError,
                         nidaqmx.error_codes.DAQmxErrors.INVALID_TASK)
 
