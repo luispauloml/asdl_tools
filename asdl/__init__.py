@@ -13,9 +13,6 @@ class MeasuredData(object):
             obj = pickle.load(file_)
         return obj
 
-    def __init__(self):
-        pass
-
     def save(self, file_name):
         """Save data from current object to a binary file.
 
