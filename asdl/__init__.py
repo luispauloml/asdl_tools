@@ -3,6 +3,7 @@ import pickle
 class MeasuredData(object):
     """Objects to stored measured or computed values"""
 
+    @staticmethod
     def load(file_name):
         """Load data from a saved object.
 
