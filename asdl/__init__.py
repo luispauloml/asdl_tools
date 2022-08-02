@@ -29,10 +29,6 @@ class MeasuredData(object):
             raise TypeError('the values should be a numpy.nparray')
         self._data['results'] = values
 
-    def purge_data(self):
-        """Delete the data stored in the object."""
-        self._data = MeasuredData()._data
-
     def save(self, file_name):
         """Save data from current object to a binary file.
 
