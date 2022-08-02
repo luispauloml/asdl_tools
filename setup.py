@@ -13,7 +13,7 @@ license = license.splitlines()[0]
 setup(
     name='asdl_tools',
     version='0.0.0',
-    description='Tools used for experiments at ASDL',
+    description='Tools for working at ASDL',
     long_description=readme,
     author='Luis Paulo Morais Lima',
     author_email='luispauloml@gmail.com',

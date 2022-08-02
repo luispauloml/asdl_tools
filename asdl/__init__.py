@@ -1,3 +1,11 @@
+"""Tools for working at ASDL.
+
+A collection of tools useful for work at the Active Structures and Dynamic
+Systems Laboratory.
+
+"""
+
+
 import os
 import pickle
 
