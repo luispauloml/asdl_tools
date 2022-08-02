@@ -1,4 +1,3 @@
-import numbers
 import numpy as np
 import pickle
 
@@ -17,60 +16,7 @@ class MeasuredData(object):
 
     def __init__(self):
         self._data = {'space': [None, None], 'time': None, 'results': None}
-        self._steps = {'time': None, 'space': None}
         self.header = []
-
-    def _set_steps(self, step, value):
-        if isinstance(value, numbers.Number) or value is None:
-            if step in ['time', 'freq']:
-                if value is None:
-                    self._steps['time'] = None
-                else:
-                    # Sampling frequency and time step should
-                    # be set together
-                    if step == 'freq':
-                        self._steps['time'] = (value, 1/value)
-                    else:
-                        self._steps['time'] = (1/value, value)
-            elif step == 'space':
-                self._steps['space'] = value
-            else:
-                raise ValueError('invald step')
-        else:
-            raise TypeError('the value should be a number or None')
-
-    @property
-    def fs(self):
-        """the sampling frequency"""
-        if self._steps['time'] is None:
-            return None
-        else:
-            return self._steps['time'][0]
-
-    @fs.setter
-    def fs(self, value):
-        self._set_steps('freq', value)
-
-    @property
-    def dt(self):
-        """the time step"""
-        if self._steps['time'] is None:
-            return None
-        else:
-            return self._steps['time'][1]
-
-    @dt.setter
-    def dt(self, value):
-        self._set_steps('time', value)
-
-    @property
-    def dx(self):
-        """the step in space"""
-        return self._steps['space']
-
-    @dx.setter
-    def dx(self, value):
-        self._set_steps('space', value)
 
     @property
     def data(self):
