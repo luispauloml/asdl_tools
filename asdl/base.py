@@ -1,7 +1,6 @@
 import numbers
 import numpy as np
 import pickle
-from collections.abc import Iterable
 
 class MeasuredData(object):
     """Objects to stored measured or computed values"""
@@ -150,72 +149,3 @@ class MeasuredData(object):
 
         with open(file_name, 'wb') as file_:
             pickle.dump(obj, file_, pickle.HIGHEST_PROTOCOL)
-
-class BaseWave(MeasuredData):
-    """Base class to define Wavepacket and Surface"""
-
-    @property
-    def space_boundary(self):
-        """the limits of the space domain"""
-        raise NotImplementedError
-
-    @space_boundary.setter
-    def space_boundary(self, L):
-        raise NotImplementedError
-
-    @property
-    def time_boundary(self):
-        """the limits of the time domain"""
-        return self._tlim
-
-    @time_boundary.setter
-    def time_boundary(self, value):
-        if value is None:
-            self._tlim = None
-            return
-
-        # Recursively try again
-        if not isinstance(value, tuple):
-            self.time_boundary = (0, value)
-            return
-
-        new_values = []
-        for v in value:
-            if not isinstance(v, numbers.Number):
-                raise TypeError('the values for time boundary should \
-be numbers')
-            else:
-                new_values.append(v)
-        else:
-            self._tlim = (new_values[0], new_values[1])
-
-    @property
-    def normalize(self):
-        """flag for noramlization of values"""
-        return self._normalize_flag
-
-    @normalize.setter
-    def normalize(self, flag):
-        # Use if statement to garantee that `normalize` becomes bool
-        if flag:
-            self._normalize_flag = True
-        else:
-            self._normalize_flag = False
-
-    def eval(self):
-        raise NotImplementedError
-
-    def _discretize(self, lims, step, values):
-        """Check if values change or not and rediscretize"""
-        v1, v2 = lims
-        if values is not None:
-            if (step == values[1] - values[0] and
-                values[0] == v1 and
-                values[-1] == v2):
-                return values
-
-        # If check fails, re-evaluate
-        # Due to floating point errors, to avoid changes in size of
-        # the output, I add a quarter of the step to the upper limit
-        return np.arange(v1, v2 + step / 4, step)
-
