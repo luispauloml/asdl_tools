@@ -15,7 +15,7 @@ class MeasuredData(object):
         return obj
 
     def __init__(self):
-        self._data = {'space': [None, None], 'time': None, 'results': None}
+        self._data = {'results': None}
         self.header = []
 
     @property
@@ -32,45 +32,6 @@ class MeasuredData(object):
     def purge_data(self):
         """Delete the data stored in the object."""
         self._data = MeasuredData()._data
-
-    @property
-    def time_vect(self):
-        """a vector with the time discretized"""
-        return self._data['time']
-
-    @time_vect.setter
-    def time_vect(self, vect):
-        self._data['time'] = vect
-
-    @property
-    def x_vect(self):
-        """a vector of the discretization of space in the x direction"""
-        return self._data['space'][0]
-
-    @x_vect.setter
-    def x_vect(self, values):
-        err = TypeError('the values should be a 1D numpy.ndarray')
-        if not isinstance(values, np.ndarray):
-            raise err
-        if len(values.shape) != 1:
-            raise err
-
-        self._data['space'][0] = values
-
-    @property
-    def y_vect(self):
-        """a vector of the discretization of space in the y direction"""
-        return self._data['space'][1]
-
-    @y_vect.setter
-    def y_vect(self, values):
-        err = TypeError('the values should be a 1D numpy.ndarray')
-        if not isinstance(values, np.ndarray):
-            raise err
-        if len(values.shape) != 1:
-            raise err
-
-        self._data['space'][1] = values
 
     def save(self, file_name):
         """Save data from current object to a binary file.
