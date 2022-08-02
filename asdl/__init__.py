@@ -14,7 +14,7 @@ class MeasuredData(object):
         return obj
 
     def __init__(self):
-        self.header = []
+        pass
 
     def save(self, file_name):
         """Save data from current object to a binary file.
