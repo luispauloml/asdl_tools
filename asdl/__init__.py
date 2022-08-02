@@ -1,25 +1,17 @@
 import pickle
 
 class MeasuredData(object):
-    """Objects to stored measured or computed values"""
+    """Object to store, save and load data."""
 
     @staticmethod
     def load(file_name):
-        """Load data from a saved object.
-
-        NOTE: the loaded object will be an instance of MeasuredData.
-
-        """
+        """Load data from a saved object."""
         with open(file_name, 'rb') as file_:
             obj = pickle.load(file_)
         return obj
 
     def save(self, file_name):
         """Save data from current object to a binary file.
-
-        If the object being saved is an instance of a subclass of
-        MeasuredData, it will be an instance of MeasuredData after
-        being reloaded, and not of the original class.
 
         NOTE: this method always overwrite existing files.
 
@@ -28,9 +20,5 @@ class MeasuredData(object):
             The name of the file where the data will be stored.
 
         """
-        obj = MeasuredData()
-        for key in obj.__dict__.keys():
-            obj.__dict__[key] = self.__dict__[key]
-
         with open(file_name, 'wb') as file_:
-            pickle.dump(obj, file_, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, file_, pickle.HIGHEST_PROTOCOL)
