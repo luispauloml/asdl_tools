@@ -1,6 +1,7 @@
 """A module to handle NI-DAQmx write and read tasks."""
 
 import builtins
+import cmd
 import nidaqmx
 import warnings
 import functools
@@ -301,3 +302,60 @@ class SingleDevice(Task):
                           nidaqmx.DaqError,
                           nidaqmx.error_codes.DAQmxErrors.INVALID_TASK,
                           args=args, kwargs=kwargs)
+
+class InteractiveExperiment(cmd.Cmd, SingleDevice):
+    prompt = '(Interactive Experiment) '
+
+    def __init__(self, device_name):
+        cmd.Cmd.__init__(self)
+        SingleDevice.__init__(self, device_name)
+        self._variables_docstrings = {}
+
+    def register_variable(self, var_name, value, docstring=None):
+        self.__dict__[var_name] = value
+        self._variables_docstrings[var_name] = docstring
+
+    def do_variables(self, _):
+        if self._variables_docstrings == {}:
+            self.stdout.write('*** No variables defined\n')
+        else:
+            for var_name, docstring in self._variables_docstrings.items():
+                self.stdout.write(
+                    '{0}={1}\t\t{2}\n'.format(
+                        var_name,
+                        self.__dict__[var_name],
+                        docstring))
+
+    def do_exit(self, _):
+        return 1
+
+    def do_set(self, args):
+        try:
+            var_name, new_value, *rest = args.split()
+        except ValueError:
+            self.stdout.write("*** Bad input: try 'set VARIABLE VALUE'\n")
+            return
+        else:
+            if len(rest) > 0:
+                self.default('set ' + args)
+                return
+
+        try:
+            old_value = self.__dict__[var_name]
+        except KeyError:
+            self.stdout.write(f"*** Bad input: '{var_name}' not defined\n")
+            return
+
+        try:
+            new_value = float(new_value)
+        except ValueError:
+            self.stdout.write('*** Bad input: VALUE should be a number\n')
+            return
+
+        self.__dict__[var_name] = new_value
+
+        try:
+            func = getattr(self, 'set_' + var_name + '_hook')
+        except AttributeError:
+            return None
+        return func(self, new_value, old_value)
