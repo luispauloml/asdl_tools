@@ -186,6 +186,24 @@ class Task:
 
         self.write_task.start()
 
+    @_dispatch(nidaqmx.Task.is_task_done, 'nidaqmx.Task.is_task_done')
+    def is_task_done(self):
+        try:
+            write_is_done = self.write_task.is_task_done()
+        except nidaqmx.DaqError as err:
+            if err.error_code == nidaqmx.error_codes.DAQmxErrors.INVALID_TASK:
+                write_is_done = True
+            else:
+                raise err
+        try:
+            read_is_done = self.read_task.is_task_done()
+        except nidaqmx.DaqError as err:
+            if err.error_code == nidaqmx.error_codes.DAQmxErrors.INVALID_TASK:
+                read_is_done = True
+            else:
+                raise err
+
+        return write_is_done and read_is_done
 
 class SingleDevice(Task):
     """Manage tasks for a single NI device.
