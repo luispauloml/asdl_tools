@@ -9,7 +9,7 @@ import functools
 __all__ = ['Task', 'SingleDevice']
 
 
-def _catch_excpetions(funcs, except_type, except_code=None,
+def _catch_excpetions(funcs, except_type, except_codes=None,
                       qtde=1, args=(), kwargs={}):
     """Catch errors or warnings coming from DAQmx.
 
@@ -26,8 +26,8 @@ def _catch_excpetions(funcs, except_type, except_code=None,
         builtin.Exception or builtins.Warning.
     qtde :  int, default=1
         Number of erros to be caught before an exception is raised.
-    except_code : int, defualt=None
-        The error code.  If None, there will be no error code
+    except_codes : int or list, defualt=None
+        The error codes.  If None, there will be no error code
         comparison.
     args : tupe, default=()
         A tuple with positional arguments to be passed to the
@@ -38,6 +38,9 @@ def _catch_excpetions(funcs, except_type, except_code=None,
 
     """
     count = 0
+    if isinstance(except_codes, int):
+        except_codes = [except_codes]
+
     if issubclass(except_type, builtins.Warning):
         with warnings.catch_warnings(record=True) as caught_warnings:
             for func in funcs:
@@ -56,10 +59,10 @@ def _catch_excpetions(funcs, except_type, except_code=None,
             try:
                 func(*args, **kwargs)
             except except_type as e:
-                if except_code is None:
+                if except_codes is None:
                     count += 1
                 else:
-                    if e.error_code == except_code:
+                    if e.error_code in except_codes:
                         count += 1
                     else:
                         raise e
