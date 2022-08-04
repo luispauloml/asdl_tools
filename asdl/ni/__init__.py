@@ -409,4 +409,4 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             func = getattr(self, 'set_' + var_name + '_hook')
         except AttributeError:
             return None
-        return func(self, new_value, old_value)
+        return func(new_value, old_value)
