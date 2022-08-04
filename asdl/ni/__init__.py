@@ -342,6 +342,24 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                         self.__dict__[var_name],
                         docstring if docstring else '(no documentation)'))
 
+    def do_system(self, _):
+        """Show information about the system."""
+        self.stdout.write('\nDevice:\n')
+        if self.ruler:
+            self.stdout.write(f'{self.ruler * 7}\n')
+        self.stdout.write(f'Name:\t{self.device.name}\n')
+        self.stdout.write(f'Type:\t{self.device.product_type}\n\n')
+
+        channels = \
+            [str(ch) for ch in list(self.ai_channels) + list(self.ao_channels)]
+        if channels:
+            self.print_topics('Channels:', channels, None, 80)
+        else:
+            self.stdout.write('Channels:\n')
+            if self.ruler:
+                self.stdout.write(f'{self.ruler * 9}\n')
+            self.stdout.write('*** No channels\n\n')
+
     def do_exit(self, _):
         """Exit the prompt."""
         return 1
