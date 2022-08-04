@@ -317,8 +317,11 @@ class SingleDevice(Task):
     @_dispatch(nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing,
                'nidaqmx._task_modules.timing.Timing.cfg_samp_clk_timing')
     def cfg_samp_clk_timing(self, *args, **kwargs):
-        _catch_excpetions([self.write_task.timing.cfg_samp_clk_timing,
-                           self.read_task.timing.cfg_samp_clk_timing],
-                          nidaqmx.DaqError,
-                          nidaqmx.error_codes.DAQmxErrors.INVALID_TASK,
-                          args=args, kwargs=kwargs)
+        _catch_excpetions(
+            [self.write_task.timing.cfg_samp_clk_timing,
+             self.read_task.timing.cfg_samp_clk_timing],
+            nidaqmx.DaqError,
+            [nidaqmx.error_codes.DAQmxErrors.INVALID_TASK,
+             nidaqmx.error_codes.DAQmxErrors.CAN_NOT_PERFORM_OP_WHEN_NO_DEV_IN_TASK],
+            args=args, kwargs=kwargs,
+        )
