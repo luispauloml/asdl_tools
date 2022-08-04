@@ -16,6 +16,16 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         """Print nothing."""
         self.stdout.write('')
 
+    def badinput(self, msg):
+        """Print warning of bad input.
+
+        Parameters:
+        msg : str
+            The string to be printed in the message.
+
+        """
+        self.stdout.write('*** Bad input: ' + msg + '\n')
+
     def setup(self):
         """Set up the system.
 
@@ -99,7 +109,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         try:
             var_name, new_value, *rest = args.split()
         except ValueError:
-            self.stdout.write("*** Bad input: try 'set VARIABLE VALUE'\n")
+            self.badinput("try 'set VARIABLE VALUE'")
             return
         else:
             if len(rest) > 0:
@@ -109,13 +119,13 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         try:
             old_value = self.__dict__[var_name]
         except KeyError:
-            self.stdout.write(f"*** Bad input: '{var_name}' not defined\n")
+            self.badinput(f"'{var_name}' not defined")
             return
 
         try:
             new_value = float(new_value)
         except ValueError:
-            self.stdout.write('*** Bad input: VALUE should be a number\n')
+            self.badinput('VALUE should be a number')
             return
 
         self.__dict__[var_name] = new_value
