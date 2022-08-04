@@ -12,6 +12,10 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         SingleDevice.__init__(self, device_name)
         self._variables_docstrings = {}
 
+    def emptyline(self):
+        """Print nothing."""
+        self.stdout.write('')
+
     def setup(self):
         """Set up the system.
 
