@@ -304,6 +304,8 @@ class SingleDevice(Task):
                           args=args, kwargs=kwargs)
 
 class InteractiveExperiment(cmd.Cmd, SingleDevice):
+    """Interactive prompts for a task with single device."""
+    
     prompt = '(Interactive Experiment) '
 
     def __init__(self, device_name):
@@ -312,6 +314,15 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         self._variables_docstrings = {}
 
     def register_variable(self, var_name, docstring=None):
+        """Register a variable to be available for `set` command.
+
+        Parameters:
+        var_name : str 
+            The name of the variable to be registered.
+        docstring : str
+            The documentation of the variable to be shown in the
+            `variables` command.
+        """
         try:
             self.__dict__[var_name]
         except KeyError:
@@ -320,6 +331,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             self._variables_docstrings[var_name] = docstring
 
     def do_variables(self, _):
+        """List all variables that can be changed."""
         if self._variables_docstrings == {}:
             self.stdout.write('*** No variables defined\n')
         else:
@@ -328,12 +340,14 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                     '{0}={1}\t\t{2}\n'.format(
                         var_name,
                         self.__dict__[var_name],
-                        docstring))
+                        docstring if docstring else '(no documentation)'))
 
     def do_exit(self, _):
+        """Exit the prompt."""
         return 1
 
     def do_set(self, args):
+        """Set the value of a variable: set VARIABLE VALUE."""
         try:
             var_name, new_value, *rest = args.split()
         except ValueError:
