@@ -311,9 +311,13 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         SingleDevice.__init__(self, device_name)
         self._variables_docstrings = {}
 
-    def register_variable(self, var_name, value, docstring=None):
-        self.__dict__[var_name] = value
-        self._variables_docstrings[var_name] = docstring
+    def register_variable(self, var_name, docstring=None):
+        try:
+            self.__dict__[var_name]
+        except KeyError:
+            raise ValueError(f"variable '{var_name}' is not defined")
+        else:
+            self._variables_docstrings[var_name] = docstring
 
     def do_variables(self, _):
         if self._variables_docstrings == {}:
