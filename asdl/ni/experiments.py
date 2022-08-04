@@ -1,4 +1,5 @@
 import cmd
+import numpy as np
 from . import SingleDevice
 
 
@@ -120,3 +121,134 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
     def do_stop(self, _):
         """Stop the experiment."""
         self.stop()
+
+
+class LaserExperiment(InteractiveExperiment):
+    prompt = '(Laser Experiment) '
+
+    def __init__(
+            self,
+            device_name,
+            mirror_x_chan=None,
+            mirror_y_chan=None,
+            min_out_volt=-10,
+            max_out_volt=+10,
+            sampl_rate=1e3,
+            distance=100,
+            volt_deg_scale=0.4,
+    ):
+        InteractiveExperiment.__init__(self, device_name)
+        self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
+        self._mirror_chans = [None, None]
+        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
+            if mirror_chan is not None:
+                ch = self.add_ao_voltage_chan(
+                    mirror_chan,
+                    min_val=self._min_max[0],
+                    max_val=self._min_max[1]
+                )
+                if i == 0:
+                    self._mirror_chans = [ch, self.mirror_y_chan]
+                else:
+                    self._mirror_chans = [self.mirror_x_chan, ch]
+
+        self.distance = distance
+        self.sampl_rate = sampl_rate
+        self.volt_deg_scale = volt_deg_scale
+        self.x_pos = 0
+        self.y_pos = 0
+
+    def set_sampl_rate(self, value):
+        """the sampling rate (Hz)"""
+        try:
+            value = float(value)
+        except ValueError as err:
+            self.stdout.write(f'*** Error: {err.args[0]}')
+            return
+        self.sampl_rate = value
+        self.stdout.write('*** Warning: changing the sampling rate will \
+not affect current experiment\n')
+
+    def set_distance(self, value):
+        """the distance of the surface (cm)"""
+        try:
+            value = float(value)
+        except ValueError as err:
+            self.stdout.write(f'*** Error: {err.args[0]}')
+            return
+        else:
+            self.distance = value
+
+    def set_volt_deg_scale(self, value):
+        """the scaling factor (V/deg)"""
+        try:
+            value = float(value)
+        except ValueError as err:
+            self.stdout.write(f'*** Error: {err.args[0]}')
+            return
+        self.volt_deg_scale = value
+
+    def pos_to_volt_array(self, x_pos, y_pos):
+        """Convert from a desired position to output voltage."""
+        return tuple(self.volt_deg_scale * 180 / np.pi * \
+                     np.arctan2([-x_pos, -y_pos], self.distance))
+
+    def do_point(self, args):
+        """Move laiser point to position (x, y): point X Y"""
+        try:
+            x_pos, y_pos, *rest = args.split()
+        except ValueError:
+            self.badinput("try 'point X Y'")
+            return
+        else:
+            if len(rest) > 0:
+                self.default('point ' + args)
+                return
+
+        vals = []
+        for val in [x_pos, y_pos]:
+            try:
+                val = float(val)
+            except ValueError:
+                self.badinput('the arguments should be numbers')
+                return
+            else:
+                vals.append(val)
+
+        x_volt, y_volt = self.pos_to_volt_array(*vals)
+        if self.mirror_x_chan and self.mirror_y_chan:
+            data = [[x_volt, x_volt], [y_volt, y_volt]]
+        elif self.mirror_x_chan:
+            data = [x_volt, x_volt]
+        elif self.mirror_y_chan:
+            data = [y_volt, y_volt]
+        else:
+            self.x_pos, self.y_pos = vals
+            return
+
+        self.write_task.stop()
+        try:
+            self.write_task.write(data, auto_start=True)
+        except ni.errors.DaqWriteError as err:
+            self.stdout.write(f'*** Error: {err.args[0]}\n\n')
+            self.write_task.start()
+        else:
+            self.x_pos, self.y_pos = vals
+
+    def set_x_pos(self, new_value):
+        """x position of the laser point (cm)"""
+        self.do_point(f'{new_value} {self.y_pos}')
+
+    def set_y_pos(self, new_value):
+        """y position of the laser point (cm)"""
+        self.do_point(f'{self.x_pos} {new_value}')
+
+    @property
+    def mirror_x_chan(self):
+        """The channel that controls the X direction of the mirrors."""
+        return self._mirror_chans[0]
+
+    @property
+    def mirror_y_chan(self):
+        """The channel that controls the Y direction of the mirrors."""
+        return self._mirror_chans[1]    
