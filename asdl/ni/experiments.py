@@ -125,3 +125,11 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         except AttributeError:
             return None
         return func(new_value, old_value)
+
+def do_start(self, _):
+    """Start the experiment."""
+    self.start()
+
+def do_stop(self, _):
+    """Stop the experiment."""
+    self.stop()
