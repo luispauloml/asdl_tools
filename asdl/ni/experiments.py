@@ -4,7 +4,7 @@ from . import SingleDevice
 
 class InteractiveExperiment(cmd.Cmd, SingleDevice):
     """Interactive prompts for a task with single device."""
-
+    intro = "Try '?' or 'help' for help."
     prompt = '(Interactive Experiment) '
 
     def __init__(self, device_name):
