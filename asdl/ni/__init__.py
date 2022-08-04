@@ -332,15 +332,30 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
 
     def do_variables(self, _):
         """List all variables that can be changed."""
+        self.stdout.write('\nVariables:\n')
+        if self.ruler:
+            self.stdout.write(f'{self.ruler * 10}\n')
         if self._variables_docstrings == {}:
             self.stdout.write('*** No variables defined\n')
         else:
+            self.stdout.write('\n')
+            for var_name, value, docstring \
+                in[('Name', 'Value', 'Documentation'),
+                   ('---------------', '----------', '-------------')]:
+                self.stdout.write(
+                    '{0:15}  {1:10}  {2}\n'.format(
+                        var_name, value, docstring
+                        )
+                    )
             for var_name, docstring in self._variables_docstrings.items():
                 self.stdout.write(
-                    '{0}={1}\t\t{2}\n'.format(
+                    '{0:15}  {1:10}  {2}\n'.format(
                         var_name,
                         self.__dict__[var_name],
-                        docstring if docstring else '(no documentation)'))
+                        docstring if docstring else '<no documentation>',
+                    )
+                )
+        self.stdout.write('\n')
 
     def do_system(self, _):
         """Show information about the system."""
