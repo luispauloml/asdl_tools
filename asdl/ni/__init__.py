@@ -313,6 +313,18 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         SingleDevice.__init__(self, device_name)
         self._variables_docstrings = {}
 
+    def setup(self):
+        """Set up the system.
+
+        This method does nothing unless it is overridden.
+
+        """
+        pass
+
+    def do_setup(self, _):
+        """Run the setup."""
+        return self.setup()
+
     def register_variable(self, var_name, docstring=None):
         """Register a variable to be available for `set` command.
 
