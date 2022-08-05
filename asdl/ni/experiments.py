@@ -4,14 +4,10 @@ import functools
 from . import SingleDevice
 
 
-class InteractiveExperiment(cmd.Cmd, SingleDevice):
+class InteractiveExperiment(cmd.Cmd):
     """Interactive prompts for a task with single device."""
     intro = "Try '?' or 'help' for help."
     prompt = '(Interactive Experiment) '
-
-    def __init__(self, device_name):
-        cmd.Cmd.__init__(self)
-        SingleDevice.__init__(self, device_name)
 
     def emptyline(self):
         """Print nothing."""
@@ -69,24 +65,6 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                 )
         self.stdout.write('\n')
 
-    def do_system(self, *args_):
-        """Show information about the system."""
-        self.stdout.write('\nDevice:\n')
-        if self.ruler:
-            self.stdout.write(f'{self.ruler * 7}\n')
-        self.stdout.write(f'Name:\t{self.device.name}\n')
-        self.stdout.write(f'Type:\t{self.device.product_type}\n\n')
-
-        channels = \
-            [str(ch) for ch in list(self.ai_channels) + list(self.ao_channels)]
-        if channels:
-            self.print_topics('Channels:', channels, None, 80)
-        else:
-            self.stdout.write('Channels:\n')
-            if self.ruler:
-                self.stdout.write(f'{self.ruler * 9}\n')
-            self.stdout.write('*** No channels\n\n')
-
     def do_exit(self, *args_):
         """Exit the prompt."""
         return 1
@@ -114,14 +92,6 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             return
         else:
             func(new_value)
-
-    def do_start(self, *args_):
-        """Start the experiment."""
-        self.start()
-
-    def do_stop(self, *args_):
-        """Stop the experiment."""
-        self.stop()
 
     def parsearg(self, arg, parser, raise_error=False):
         """"Parse an argument using a parser.
@@ -153,7 +123,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             return value
 
 
-class LaserExperiment(InteractiveExperiment):
+class LaserExperiment(InteractiveExperiment, SingleDevice):
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
@@ -173,7 +143,8 @@ class LaserExperiment(InteractiveExperiment):
             distance=100,
             volt_deg_scale=0.4,
     ):
-        InteractiveExperiment.__init__(self, device_name)
+        InteractiveExperiment.__init__(self)
+        SingleDevice.__init__(self, device_name)
         self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
         for i, mirror_chan in enumerate(
                 [mirror_x_chan, mirror_y_chan, excit_chan, read_chan]):
@@ -274,8 +245,8 @@ not affect current experiment\n')
         else:
             self.y_pos = value
 
-    @functools.wraps(InteractiveExperiment.do_system)
     def do_system(self, *args_):
+        """Show information about the system."""
         self.stdout.write('\nDevice:\n')
         if self.ruler:
             self.stdout.write(f'{self.ruler * 7}\n')
@@ -290,3 +261,11 @@ not affect current experiment\n')
                  ('Reading', self.read_chan)]
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
+
+    def do_start(self, *args_):
+        """Start the experiment."""
+        self.start()
+
+    def do_stop(self, *args_):
+        """Stop the experiment."""
+        self.stop()
