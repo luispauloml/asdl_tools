@@ -34,11 +34,11 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         """
         pass
 
-    def do_setup(self, _):
+    def do_setup(self, *args_):
         """Run the setup."""
         return self.setup()
 
-    def do_variables(self, _):
+    def do_variables(self, *args_):
         """List all variables that can be changed."""
         names = dir(self)
         var_names = [name[4:] for name in names if name.startswith('set_')]
@@ -68,7 +68,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                 )
         self.stdout.write('\n')
 
-    def do_system(self, _):
+    def do_system(self, *args_):
         """Show information about the system."""
         self.stdout.write('\nDevice:\n')
         if self.ruler:
@@ -86,7 +86,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                 self.stdout.write(f'{self.ruler * 9}\n')
             self.stdout.write('*** No channels\n\n')
 
-    def do_exit(self, _):
+    def do_exit(self, *args_):
         """Exit the prompt."""
         return 1
 
@@ -114,11 +114,11 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         else:
             func(new_value)
 
-    def do_start(self, _):
+    def do_start(self, *args_):
         """Start the experiment."""
         self.start()
 
-    def do_stop(self, _):
+    def do_stop(self, *args_):
         """Stop the experiment."""
         self.stop()
 
