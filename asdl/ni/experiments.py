@@ -136,10 +136,10 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             return None
         return func(new_value, old_value)
 
-def do_start(self, _):
-    """Start the experiment."""
-    self.start()
+    def do_start(self, _):
+        """Start the experiment."""
+        self.start()
 
-def do_stop(self, _):
-    """Stop the experiment."""
-    self.stop()
+    def do_stop(self, _):
+        """Stop the experiment."""
+        self.stop()
