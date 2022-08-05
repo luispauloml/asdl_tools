@@ -125,6 +125,8 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
 
 class LaserExperiment(InteractiveExperiment):
     prompt = '(Laser Experiment) '
+    mirror_x_chan = None
+    mirror_y_chan = None
 
     def __init__(
             self,
@@ -139,7 +141,6 @@ class LaserExperiment(InteractiveExperiment):
     ):
         InteractiveExperiment.__init__(self, device_name)
         self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
-        self._mirror_chans = [None, None]
         for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
             if mirror_chan is not None:
                 ch = self.add_ao_voltage_chan(
@@ -148,9 +149,9 @@ class LaserExperiment(InteractiveExperiment):
                     max_val=self._min_max[1]
                 )
                 if i == 0:
-                    self._mirror_chans = [ch, self.mirror_y_chan]
+                    self.mirror_x_chan = ch
                 else:
-                    self._mirror_chans = [self.mirror_x_chan, ch]
+                    self.mirror_y_chan = ch
 
         self.distance = distance
         self.sampl_rate = sampl_rate
@@ -242,13 +243,3 @@ not affect current experiment\n')
     def set_y_pos(self, new_value):
         """y position of the laser point (cm)"""
         self.do_point(f'{self.x_pos} {new_value}')
-
-    @property
-    def mirror_x_chan(self):
-        """The channel that controls the X direction of the mirrors."""
-        return self._mirror_chans[0]
-
-    @property
-    def mirror_y_chan(self):
-        """The channel that controls the Y direction of the mirrors."""
-        return self._mirror_chans[1]    
