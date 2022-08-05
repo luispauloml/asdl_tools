@@ -61,7 +61,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                 self.stdout.write(
                     '{0:15}  {1:10}  {2}\n'.format(
                         var_name,
-                        self.__dict__[var_name],
+                        getattr(self, var_name),
                         docstring if docstring else '<no documentation>',
                     )
                 )
@@ -101,9 +101,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                 self.default('set ' + args)
                 return
 
-        try:
-            old_value = self.__dict__[var_name]
-        except KeyError:
+        if var_name not in dir(self):
             self.badinput(f"'{var_name}' not defined")
             return
 
