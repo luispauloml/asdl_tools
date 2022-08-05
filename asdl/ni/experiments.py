@@ -1,5 +1,6 @@
 import cmd
 import numpy as np
+import functools
 from . import SingleDevice
 
 
@@ -252,3 +253,20 @@ not affect current experiment\n')
     def set_y_pos(self, new_value):
         """y position of the laser point (cm)"""
         self.do_point(f'{self.x_pos} {new_value}')
+
+    @functools.wraps(InteractiveExperiment.do_system)
+    def do_system(self, *args_):
+        self.stdout.write('\nDevice:\n')
+        if self.ruler:
+            self.stdout.write(f'{self.ruler * 7}\n')
+        self.stdout.write(f'Name:\t{self.device.name}\n')
+        self.stdout.write(f'Type:\t{self.device.product_type}\n\n')
+        self.stdout.write('Channels:\n')
+        if self.ruler:
+                self.stdout.write(f'{self.ruler * 9}\n')
+        pairs = [('Mirror (X)', self.mirror_x_chan),
+                 ('Mirror (Y)', self.mirror_y_chan),
+                 ('Excitation', self.excit_chan),
+                 ('Reading', self.read_chan)]
+        for name, ch in pairs:
+            self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
