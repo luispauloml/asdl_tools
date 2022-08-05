@@ -170,6 +170,20 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.x_pos = 0.0
         self.y_pos = 0.0
 
+    def setup(self):
+        """Set sampling rate and samples per channel.
+
+        If `LaserExperiment.data_out` is None, the number of samples
+        per channel will 2.
+
+        """
+        self.stop()
+        self.cfg_samp_clk_timing(
+            self.sampl_rate,
+            sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
+            samps_per_chan= self.data_out.size if self.data_out else 2,
+        )
+
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
         value = self.parsearg(value, float)
