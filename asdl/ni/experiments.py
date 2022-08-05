@@ -10,7 +10,6 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
     def __init__(self, device_name):
         cmd.Cmd.__init__(self)
         SingleDevice.__init__(self, device_name)
-        self._variables_docstrings = {}
 
     def emptyline(self):
         """Print nothing."""
@@ -37,23 +36,6 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
     def do_setup(self, _):
         """Run the setup."""
         return self.setup()
-
-    def register_variable(self, var_name, docstring=None):
-        """Register a variable to be available for `set` command.
-
-        Parameters:
-        var_name : str 
-            The name of the variable to be registered.
-        docstring : str
-            The documentation of the variable to be shown in the
-            `variables` command.
-        """
-        try:
-            self.__dict__[var_name]
-        except KeyError:
-            raise ValueError(f"variable '{var_name}' is not defined")
-        else:
-            self._variables_docstrings[var_name] = docstring
 
     def do_variables(self, _):
         """List all variables that can be changed."""
