@@ -113,7 +113,7 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             self.badinput(f"'set_{var_name}' method not found")
             return
         else:
-            func(self, new_value)
+            func(new_value)
 
     def do_start(self, _):
         """Start the experiment."""
