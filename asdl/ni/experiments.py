@@ -123,6 +123,35 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
         """Stop the experiment."""
         self.stop()
 
+    def parsearg(self, arg, parser, raise_error=False):
+        """"Parse an argument using a parser.
+
+        Returns the value parsed, in case of success, or None
+        otherwise.
+
+        Parameters:
+        arg : string
+            An argument string to parsed into a value.
+        parser :
+            A function for parsing.  It should raise a `ValueError` if
+            `arg` cannot be parsed.
+        raise_error : bool, optional
+            A flag for controlling the error handling.  If True, raise
+            the exception from parsers.  If False, print the message
+            of the parser's exception and return None.
+
+        """
+        try:
+            value = parser(arg)
+        except ValueError as err:
+            if raise_error:
+                raise err
+            else:
+                self.stdout.write(f'*** Error: {err.args[0]}\n')
+                return
+        else:
+            return value
+
 
 class LaserExperiment(InteractiveExperiment):
     prompt = '(Laser Experiment) '
@@ -171,33 +200,29 @@ class LaserExperiment(InteractiveExperiment):
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
-        try:
-            value = float(value)
-        except ValueError as err:
-            self.stdout.write(f'*** Error: {err.args[0]}')
+        value = self.parsearg(value, float)
+        if value is None:
             return
-        self.sampl_rate = value
-        self.stdout.write('*** Warning: changing the sampling rate will \
+        else:
+            self.sampl_rate = value
+            self.stdout.write('*** Warning: changing the sampling rate will \
 not affect current experiment\n')
 
     def set_distance(self, value):
         """the distance of the surface (cm)"""
-        try:
-            value = float(value)
-        except ValueError as err:
-            self.stdout.write(f'*** Error: {err.args[0]}')
+        value = self.parsearg(value, float)
+        if not value:
             return
         else:
             self.distance = value
 
     def set_volt_deg_scale(self, value):
         """the scaling factor (V/deg)"""
-        try:
-            value = float(value)
-        except ValueError as err:
-            self.stdout.write(f'*** Error: {err.args[0]}')
+        value = self.parsearg(value, float)
+        if not value:
             return
-        self.volt_deg_scale = value
+        else:
+            self.volt_deg_scale = value
 
     def pos_to_volt_array(self, x_pos, y_pos):
         """Convert from a desired position to output voltage."""
@@ -218,10 +243,8 @@ not affect current experiment\n')
 
         vals = []
         for val in [x_pos, y_pos]:
-            try:
-                val = float(val)
-            except ValueError:
-                self.badinput('the arguments should be numbers')
+            val = self.parsearg(val, float)
+            if not val:
                 return
             else:
                 vals.append(val)
