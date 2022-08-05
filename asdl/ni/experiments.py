@@ -129,6 +129,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
     mirror_y_chan = None
     excit_chan = None
     read_chan = None
+    data_out = None
 
     def __init__(
             self,
