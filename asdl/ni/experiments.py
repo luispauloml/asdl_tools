@@ -164,11 +164,11 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                 else:
                     self.read_chan = ch
 
-        self.distance = distance
-        self.sampl_rate = sampl_rate
-        self.volt_deg_scale = volt_deg_scale
-        self.x_pos = 0
-        self.y_pos = 0
+        self.distance = float(distance)
+        self.sampl_rate = float(sampl_rate)
+        self.volt_deg_scale = float(volt_deg_scale)
+        self.x_pos = 0.0
+        self.y_pos = 0.0
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
