@@ -230,26 +230,18 @@ not affect current experiment\n')
                      np.arctan2([-x_pos, -y_pos], self.distance))
 
     def do_point(self, args):
-        """Move laiser point to position (x, y): point X Y"""
-        try:
-            x_pos, y_pos, *rest = args.split()
-        except ValueError:
-            self.badinput("try 'point X Y'")
-            return
-        else:
-            if len(rest) > 0:
-                self.default('point ' + args)
-                return
-
-        vals = []
-        for val in [x_pos, y_pos]:
-            val = self.parsearg(val, float)
-            if not val:
-                return
+        """Move laiser point to position (x, y): point [X [Y]]"""
+        coords = args.split()
+        for i in range(0, len(coords)):
+            if i == 0:
+                self.set_x_pos(coords[i])
+            elif i == 1:
+                self.set_y_pos(coords[i])
             else:
-                vals.append(val)
+                self.badinput("try 'point [X [Y]]'")
+                return
 
-        x_volt, y_volt = self.pos_to_volt_array(*vals)
+        x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
         if self.mirror_x_chan and self.mirror_y_chan:
             data = [[x_volt, x_volt], [y_volt, y_volt]]
         elif self.mirror_x_chan:
@@ -257,7 +249,6 @@ not affect current experiment\n')
         elif self.mirror_y_chan:
             data = [y_volt, y_volt]
         else:
-            self.x_pos, self.y_pos = vals
             return
 
         self.write_task.stop()
@@ -266,16 +257,22 @@ not affect current experiment\n')
         except ni.errors.DaqWriteError as err:
             self.stdout.write(f'*** Error: {err.args[0]}\n\n')
             self.write_task.start()
-        else:
-            self.x_pos, self.y_pos = vals
 
-    def set_x_pos(self, new_value):
+    def set_x_pos(self, value):
         """x position of the laser point (cm)"""
-        self.do_point(f'{new_value} {self.y_pos}')
+        value = self.parsearg(value, float)
+        if value is None:
+            return
+        else:
+            self.x_pos = value
 
-    def set_y_pos(self, new_value):
+    def set_y_pos(self, value):
         """y position of the laser point (cm)"""
-        self.do_point(f'{self.x_pos} {new_value}')
+        value = self.parsearg(value, float)
+        if value is None:
+            return
+        else:
+            self.y_pos = value
 
     @functools.wraps(InteractiveExperiment.do_system)
     def do_system(self, *args_):
