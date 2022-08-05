@@ -123,18 +123,12 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
             return
 
         try:
-            new_value = float(new_value)
-        except ValueError:
-            self.badinput('VALUE should be a number')
-            return
-
-        self.__dict__[var_name] = new_value
-
-        try:
-            func = getattr(self, 'set_' + var_name + '_hook')
+            func = getattr(self, 'set_' + var_name)
         except AttributeError:
-            return None
-        return func(new_value, old_value)
+            self.badinput(f"'set_{var_name}' method not found")
+            return
+        else:
+            func(self, new_value)
 
     def do_start(self, _):
         """Start the experiment."""
