@@ -57,11 +57,13 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
 
     def do_variables(self, _):
         """List all variables that can be changed."""
+        names = dir(self)
+        var_names = [name[4:] for name in names if name.startswith('set_')]
         self.stdout.write('\nVariables:\n')
         if self.ruler:
             self.stdout.write(f'{self.ruler * 10}\n')
-        if self._variables_docstrings == {}:
-            self.stdout.write('*** No variables defined\n')
+        if var_names  == []:
+            self.stdout.write('*** No variables to be set\n')
         else:
             self.stdout.write('\n')
             for var_name, value, docstring \
@@ -72,7 +74,8 @@ class InteractiveExperiment(cmd.Cmd, SingleDevice):
                         var_name, value, docstring
                         )
                     )
-            for var_name, docstring in self._variables_docstrings.items():
+            for var_name in var_names:
+                docstring = getattr(self, f'set_{var_name}').__doc__
                 self.stdout.write(
                     '{0:15}  {1:10}  {2}\n'.format(
                         var_name,
