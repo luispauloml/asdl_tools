@@ -191,8 +191,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             return
         else:
             self.sampl_rate = value
-            self.stdout.write('*** Warning: changing the sampling rate will \
-not affect current experiment\n')
+            self.setup()
 
     def set_distance(self, value):
         """the distance of the surface (cm)"""
