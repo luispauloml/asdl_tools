@@ -127,12 +127,16 @@ class LaserExperiment(InteractiveExperiment):
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
+    excit_chan = None
+    read_chan = None
 
     def __init__(
             self,
             device_name,
             mirror_x_chan=None,
             mirror_y_chan=None,
+            excit_chan=None,
+            read_chan=None,
             min_out_volt=-10,
             max_out_volt=+10,
             sampl_rate=1e3,
@@ -141,7 +145,8 @@ class LaserExperiment(InteractiveExperiment):
     ):
         InteractiveExperiment.__init__(self, device_name)
         self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
-        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
+        for i, mirror_chan in enumerate(
+                [mirror_x_chan, mirror_y_chan, excit_chan, read_chan]):
             if mirror_chan is not None:
                 ch = self.add_ao_voltage_chan(
                     mirror_chan,
@@ -150,8 +155,12 @@ class LaserExperiment(InteractiveExperiment):
                 )
                 if i == 0:
                     self.mirror_x_chan = ch
-                else:
+                elif i == 1:
                     self.mirror_y_chan = ch
+                elif i == 2:
+                    self.excit_chan = ch
+                else:
+                    self.read_chan = ch
 
         self.distance = distance
         self.sampl_rate = sampl_rate
