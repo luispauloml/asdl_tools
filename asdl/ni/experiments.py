@@ -1,4 +1,5 @@
 import cmd
+import nidaqmx
 import numpy as np
 import functools
 from . import SingleDevice
@@ -239,9 +240,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.write_task.stop()
         try:
             self.write_task.write(data, auto_start=True)
-        except ni.errors.DaqWriteError as err:
+        except nidaqmx.errors.DaqWriteError as err:
             self.stdout.write(f'*** Error: {err.args[0]}\n\n')
-            self.write_task.start()
 
     def set_x_pos(self, value):
         """x position of the laser point (cm)"""
