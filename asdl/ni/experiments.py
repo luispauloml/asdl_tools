@@ -190,11 +190,18 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         per channel will 2.
 
         """
+        if self.data_out is None:
+            nsamps = 2
+        else:
+            nsamps = self.data_out.shape
+            if len(nsamps) > 1:
+                raise ValueError("cannot setup: 'data_out' should be 1D array")
+            nsamps, = nsamps
         self.stop()
         self.cfg_samp_clk_timing(
             self.sampl_rate,
             sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
-            samps_per_chan= self.data_out.size if self.data_out else 2,
+            samps_per_chan=nsamps,
         )
 
     def set_sampl_rate(self, value):
