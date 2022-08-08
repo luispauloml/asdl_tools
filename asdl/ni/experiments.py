@@ -2,6 +2,8 @@ import cmd
 import nidaqmx
 import numpy as np
 import functools
+import traceback
+import sys
 from . import SingleDevice
 
 
@@ -122,6 +124,17 @@ class InteractiveExperiment(cmd.Cmd):
                 return
         else:
             return value
+
+    def do_eval(self, arg):
+        """Evaluate expression: eval expr"""
+        try:
+            val = eval(arg)
+        except:
+            exc_info = sys.exc_info()[:2]
+            self.stdout.write(traceback.format_exception_only(*exc_info)[-1].strip())
+            self.stdout.write('\n')
+        else:
+            self.stdout.write(repr(val) + '\n')
 
 
 class LaserExperiment(InteractiveExperiment, SingleDevice):
