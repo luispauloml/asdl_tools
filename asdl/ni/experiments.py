@@ -144,6 +144,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
     excit_chan = None
     read_chan = None
     data_out = None
+    global_variables = ['data_out']
 
     def __init__(
             self,
@@ -184,6 +185,39 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.x_pos = 0.0
         self.y_pos = 0.0
         self.data_in = DataCollection()
+        self.store_global_variables()
+
+    def store_global_variables(self):
+        """Store or update variables to be saved
+
+        Store variables that will be saved with the collection of data
+        read in the experiment.  The list of variable is the
+        `global_variables` class attribute.  The default list is
+        ['data_out'].
+
+        """
+        try:
+            getattr(self, 'global_variables')
+        except AttributeError:
+            raise AttributeError("'global_variables' not found")
+        if not isinstance(self.global_variables, list):
+            raise TypeError(
+                "expected 'global_variables' as a list, got {0}".format(
+                    type(self.global_variables)
+                )
+            )
+        data = {}
+        for var_name in self.global_variables:
+            if not isinstance(var_name, str):
+                raise TypeError(
+                    f'expected variable name as str, got {type(var_name)}'
+                    )
+            try:
+                data[var_name] = getattr(self, var_name)
+            except AttributeError:
+                raise AttributeError(f"variable '{var_name}' is not \
+defined in current experiment")
+        self.data_in.__dict__.update(data)
 
     def setup(self, write=False):
         """Set sampling rate and samples per channel.
