@@ -183,26 +183,44 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.x_pos = 0.0
         self.y_pos = 0.0
 
-    def setup(self):
+    def setup(self, write=False):
         """Set sampling rate and samples per channel.
 
-        If `LaserExperiment.data_out` is None, the number of samples
-        per channel will 2.
+        If `LaserExperiment.data_out` is None or `write` is False, the
+        number of samples per channel will set to 2.
 
+        Parameters:
+        write : bool, optional
+            Control the writing task.  If True, prepare samples for
+            all channels, keeping the laser point in a fixed position,
+            and synchronize reading and writing.  Default is False.
         """
-        if self.data_out is None:
+        if not write:
             nsamps = 2
         else:
-            nsamps = self.data_out.shape
-            if len(nsamps) > 1:
-                raise ValueError("cannot setup: 'data_out' should be 1D array")
-            nsamps, = nsamps
+            if self.data_out is None or len(self.data_out) == 0:
+                raise ValueError("cannot write: 'data_out' is empty")
+            else:
+                nsamps = self.data_out.shape
+                if len(nsamps) != 1:
+                    raise ValueError("cannot write: 'data_out' should be 1D array")
+                nsamps, = nsamps
+                x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
+                data = self.prepare_write_data(
+                    mirror_x_chan=[x_volt],
+                    mirror_y_chan=[y_volt],
+                    excit_chan=self.data_out,
+                    padding='repeat',
+                    )
         self.stop()
         self.cfg_samp_clk_timing(
             self.sampl_rate,
             sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
             samps_per_chan=nsamps,
         )
+        if write:
+            self.write(data, auto_start=False)
+            self.synchronize()
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
