@@ -142,7 +142,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             max_out_volt=+10,
             sampl_rate=1e3,
             distance=100,
-            volt_deg_scale=0.4,
+            volt_deg_scale=0.24,
     ):
         InteractiveExperiment.__init__(self)
         SingleDevice.__init__(self, device_name)
