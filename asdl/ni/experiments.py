@@ -294,7 +294,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         else:
             self.y_pos = value
 
-    def do_system(self, *args_):
+    def help_system(self):
         """Show information about the system."""
         self.stdout.write('\nDevice:\n')
         if self.ruler:
