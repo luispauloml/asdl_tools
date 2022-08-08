@@ -239,17 +239,11 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             else:
                 self.badinput("try 'point [X [Y]]'")
                 return
-
         x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
-        if self.mirror_x_chan and self.mirror_y_chan:
-            data = [[x_volt, x_volt], [y_volt, y_volt]]
-        elif self.mirror_x_chan:
-            data = [x_volt, x_volt]
-        elif self.mirror_y_chan:
-            data = [y_volt, y_volt]
-        else:
+        data = self.prepare_write_data(mirror_x_chan=[x_volt],
+                                       mirror_y_chan=[y_volt])
+        if data is None:
             return
-
         self.write_task.stop()
         try:
             self.write_task.write(data, auto_start=True)
