@@ -4,6 +4,7 @@ import numpy as np
 import traceback
 import sys
 from . import SingleDevice
+from .. import DataCollection
 
 
 class InteractiveExperiment(cmd.Cmd):
@@ -182,6 +183,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.volt_deg_scale = float(volt_deg_scale)
         self.x_pos = 0.0
         self.y_pos = 0.0
+        self.data_in = DataCollection()
 
     def setup(self, write=False):
         """Set sampling rate and samples per channel.
