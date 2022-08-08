@@ -8,6 +8,8 @@ Systems Laboratory.
 
 import os
 import pickle
+import collections
+
 
 class MeasuredData(object):
     """Object to store, save and load data."""
@@ -40,3 +42,13 @@ class MeasuredData(object):
 
         with open(file_name, 'wb') as file_:
             pickle.dump(self, file_, pickle.HIGHEST_PROTOCOL)
+
+
+class DataCollection(collections.UserList, MeasuredData):
+    """A collection of measured data.
+
+    Parameters:
+    list :
+        A list data objects to be saved.
+    """
+    pass
