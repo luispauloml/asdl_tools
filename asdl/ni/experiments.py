@@ -297,7 +297,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         """Stop the experiment."""
         self.stop()
 
-    def prepare_write_data(self, default_value=0, **channel_data_pairs):
+    def prepare_write_data(self, padding='repeat', default_value=0,
+                           **channel_data_pairs):
         """Prepare data to be sent to device.
 
         Prepares a numpy.ndarray with proper shape to be sent to the
@@ -306,14 +307,24 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         nothing.
 
         Parameters:
+        padding : {'repeat' | 'default' | None}
+            Controls the padding of data that has length smaller than
+            the largest array to be sent.  For thoses cases:
+            - if 'default', the array will be padded with
+              `default_value`
+            - if 'repeat', use the last data point as padding
+            - if None, no padding will be done, and an exception will
+              be thrown.
         default_value : float, optional
-            The value to be used in case the channel is not to receive data.
+            The value to be used in case the channel is not to receive
+            data, or for padding.
         channel_data_pairs : dict or key=value pairs, optional
-            Pairs of the form `<channel_name>=<list of values>` or a
+            Pairs of the form `<channel_name>=<array of values>` or a
             `dict` whose keys are `<channel name>` and values are
-            `<list of values>`.  The keys should be attributes of the
-            current object, an not any key.  The list of values should
-            all have the same length.
+            `<array of values>`.  The keys should be attributes of
+            current object that refer to
+            `nidaqmx._task_modules.channels.ao_channel.AOChannel`
+            objects.
 
         """
         if channel_data_pairs == {}:
@@ -321,6 +332,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         task_chans = list(self.ao_channels)
         if task_chans == []:
             return
+        if padding not in ['default', 'repeat', None]:
+            raise ValueError("'padding' should be one of {'default', 'repeat', None}")
         chosen_chans = {}
         for ch in channel_data_pairs.keys():
             try:
@@ -335,13 +348,27 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         try:
             lengths = [len(val) for val in channel_data_pairs.values()]
         except TypeError as err:
-            raise TypeError('the data inputs should be lists of values')
-        if True in (l != lengths[0] for l in lengths):
-            raise ValueError('all data input should have the same length')
-        data_out = np.ones((len(task_chans), lengths[0])) * default_value
+            raise TypeError('the data inputs should an array of values')
+        if not padding:
+            if True in (l != lengths[0] for l in lengths):
+                raise ValueError('all data input should have the same length')
+            else:
+                max_length = lengths[0]
+        else:
+            max_length = np.max(lengths)
+        data_out = np.ones((len(task_chans), max_length)) * default_value
         for name, ch in chosen_chans.items():
             i = task_chans.index(ch)
-            data_out[i, :] = channel_data_pairs[name]
+            ncols = len(channel_data_pairs[name])
+            if ncols < max_length:
+                if padding == 'default':
+                    data = np.ones((1, max_length)) * default_value
+                elif padding == 'repeat':
+                    data = np.ones((1, max_length)) * channel_data_pairs[name][-1]
+                data[0, 0:ncols] = channel_data_pairs[name]
+            else:
+                data = channel_data_pairs[name]
+            data_out[i, :] = data
         # Guarantee at least two samples per channel
         nrows, ncols = data_out.shape
         if ncols < 2:
