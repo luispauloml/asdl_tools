@@ -212,7 +212,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
     def pos_to_volt_array(self, x_pos, y_pos):
         """Convert from a desired position to output voltage."""
         return tuple(self.volt_deg_scale * 180 / np.pi * \
-                     np.arctan2([-x_pos, -y_pos], self.distance))
+                     np.arctan2([-x_pos, +y_pos], self.distance))
 
     def do_point(self, args):
         """Move laiser point to position (x, y): point [X [Y]]"""
