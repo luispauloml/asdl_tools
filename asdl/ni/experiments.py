@@ -206,12 +206,12 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                     raise ValueError("cannot write: 'data_out' should be 1D array")
                 nsamps, = nsamps
                 x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
-                data = self.prepare_write_data(
-                    mirror_x_chan=[x_volt],
-                    mirror_y_chan=[y_volt],
-                    excit_chan=self.data_out,
-                    padding='repeat',
-                    )
+                data = {'excit_chan': self.data_out}
+                if self.mirror_x_chan is not None:
+                    data['mirror_x_chan'] = [x_volt]
+                if self.mirror_y_chan is not None:
+                    data['mirror_y_chan'] = [y_volt]
+                data = self.prepare_write_data(padding='repeat', **data)
         self.stop()
         self.cfg_samp_clk_timing(
             self.sampl_rate,
@@ -264,8 +264,12 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                 self.badinput("try 'point [X [Y]]'")
                 return
         x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
-        data = self.prepare_write_data(mirror_x_chan=[x_volt],
-                                       mirror_y_chan=[y_volt])
+        data = {}
+        if self.mirror_x_chan is not None:
+            data['mirror_x_chan'] = [x_volt]
+        if self.mirror_y_chan is not None:
+            data['mirror_y_chan'] = [y_volt]
+        data = self.prepare_write_data(**data)
         if data is None:
             return
         self.write_task.stop()
