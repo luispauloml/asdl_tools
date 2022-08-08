@@ -1,7 +1,6 @@
 import cmd
 import nidaqmx
 import numpy as np
-import functools
 import traceback
 import sys
 from . import SingleDevice
