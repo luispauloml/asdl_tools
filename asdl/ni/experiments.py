@@ -296,3 +296,54 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
     def do_stop(self, *args_):
         """Stop the experiment."""
         self.stop()
+
+    def prepare_write_data(self, default_value=0, **channel_data_pairs):
+        """Prepare data to be sent to device.
+
+        Prepares a numpy.ndarray with proper shape to be sent to the
+        device.  If no channel is defined in current object, returns
+        nothing.  If no `channel_data_pairs` is provided, returns
+        nothing.
+
+        Parameters:
+        default_value : float, optional
+            The value to be used in case the channel is not to receive data.
+        channel_data_pairs : dict or key=value pairs, optional
+            Pairs of the form `<channel_name>=<list of values>` or a
+            `dict` whose keys are `<channel name>` and values are
+            `<list of values>`.  The keys should be attributes of the
+            current object, an not any key.  The list of values should
+            all have the same length.
+
+        """
+        if channel_data_pairs == {}:
+            return
+        task_chans = list(self.ao_channels)
+        if task_chans == []:
+            return
+        chosen_chans = {}
+        for ch in channel_data_pairs.keys():
+            try:
+                val = getattr(self, ch)
+            except AttributeError:
+                raise AttributeError(f"channel '{ch}' is not defined")
+            else:
+                if val not in task_chans:
+                    raise ValueError(f"channel '{ch}' is not valid")
+                else:
+                    chosen_chans[ch] = val
+        try:
+            lengths = [len(val) for val in channel_data_pairs.values()]
+        except TypeError as err:
+            raise TypeError('the data inputs should be lists of values')
+        if True in (l != lengths[0] for l in lengths):
+            raise ValueError('all data input should have the same length')
+        data_out = np.ones((len(task_chans), lengths[0])) * default_value
+        for name, ch in chosen_chans.items():
+            i = task_chans.index(ch)
+            data_out[i, :] = channel_data_pairs[name]
+        # Guarantee at least two samples per channel
+        nrows, ncols = data_out.shape
+        if ncols < 2:
+            data_out = np.hstack((data_out, data_out))
+        return data_out
