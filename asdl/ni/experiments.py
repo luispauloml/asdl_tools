@@ -396,3 +396,20 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         if ncols < 2:
             data_out = np.hstack((data_out, data_out))
         return data_out
+
+    def do_setup(self, args):
+        """Run setup procedure: setup [write]
+        If `write` is passed, prepare for writing to the device."""
+        try:
+            write_flag, *rest = args.split()
+        except ValueError:
+            write_flag = None
+        else:
+            if len(rest) > 0:
+                self.badinput("wrong number of arguments")
+                return
+        if write_flag is not None and write_flag != 'write':
+            self.badinput("try 'setup [write]'")
+            return
+        write_flag = write_flag == 'write'
+        self.setup(write=write_flag)
