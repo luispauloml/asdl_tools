@@ -181,13 +181,19 @@ class Task:
         """
         # See <https://github.com/ni/nidaqmx-python/issues/162>
 
-        self.read_task.timing.samp_clk_rate = \
-            self.write_task.timing.samp_clk_rate
-
-        self.write_task.triggers.start_trigger.cfg_dig_edge_start_trig(
-            self.read_task.triggers.start_trigger.term)
-
-        self.write_task.start()
+        try:
+            self.read_task.timing.samp_clk_rate = \
+                self.write_task.timing.samp_clk_rate
+            self.write_task.triggers.start_trigger.cfg_dig_edge_start_trig(
+                self.read_task.triggers.start_trigger.term
+            )
+            self.write_task.start()
+        except nidaqmx.DaqError as err:
+            if err.error_code not in \
+               [nidaqmx.error_codes.DAQmxErrors.\
+                CAN_NOT_PERFORM_OP_WHEN_NO_DEV_IN_TASK,
+                nidaqmx.error_codes.DAQmxErrors.INVALID_TASK]:
+                raise err
 
     @_dispatch(nidaqmx.Task.is_task_done, 'nidaqmx.Task.is_task_done')
     def is_task_done(self):

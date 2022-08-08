@@ -37,7 +37,7 @@ class InteractiveExperiment(cmd.Cmd):
         """Run the setup."""
         return self.setup()
 
-    def do_variables(self, *args_):
+    def help_variables(self):
         """List all variables that can be changed."""
         names = dir(self)
         var_names = [name[4:] for name in names if name.startswith('set_')]
@@ -183,19 +183,44 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.x_pos = 0.0
         self.y_pos = 0.0
 
-    def setup(self):
+    def setup(self, write=False):
         """Set sampling rate and samples per channel.
 
-        If `LaserExperiment.data_out` is None, the number of samples
-        per channel will 2.
+        If `LaserExperiment.data_out` is None or `write` is False, the
+        number of samples per channel will set to 2.
 
+        Parameters:
+        write : bool, optional
+            Control the writing task.  If True, prepare samples for
+            all channels, keeping the laser point in a fixed position,
+            and synchronize reading and writing.  Default is False.
         """
+        if not write:
+            nsamps = 2
+        else:
+            if self.data_out is None or len(self.data_out) == 0:
+                raise ValueError("cannot write: 'data_out' is empty")
+            else:
+                nsamps = self.data_out.shape
+                if len(nsamps) != 1:
+                    raise ValueError("cannot write: 'data_out' should be 1D array")
+                nsamps, = nsamps
+                x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
+                data = {'excit_chan': self.data_out}
+                if self.mirror_x_chan is not None:
+                    data['mirror_x_chan'] = [x_volt]
+                if self.mirror_y_chan is not None:
+                    data['mirror_y_chan'] = [y_volt]
+                data = self.prepare_write_data(padding='repeat', **data)
         self.stop()
         self.cfg_samp_clk_timing(
             self.sampl_rate,
             sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
-            samps_per_chan= self.data_out.size if self.data_out else 2,
+            samps_per_chan=nsamps,
         )
+        if write:
+            self.write(data, auto_start=False)
+            self.synchronize()
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
@@ -239,8 +264,12 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                 self.badinput("try 'point [X [Y]]'")
                 return
         x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
-        data = self.prepare_write_data(mirror_x_chan=[x_volt],
-                                       mirror_y_chan=[y_volt])
+        data = {}
+        if self.mirror_x_chan is not None:
+            data['mirror_x_chan'] = [x_volt]
+        if self.mirror_y_chan is not None:
+            data['mirror_y_chan'] = [y_volt]
+        data = self.prepare_write_data(**data)
         if data is None:
             return
         self.write_task.stop()
@@ -265,7 +294,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         else:
             self.y_pos = value
 
-    def do_system(self, *args_):
+    def help_system(self):
         """Show information about the system."""
         self.stdout.write('\nDevice:\n')
         if self.ruler:
@@ -290,7 +319,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         """Stop the experiment."""
         self.stop()
 
-    def prepare_write_data(self, default_value=0, **channel_data_pairs):
+    def prepare_write_data(self, padding='repeat', default_value=0,
+                           **channel_data_pairs):
         """Prepare data to be sent to device.
 
         Prepares a numpy.ndarray with proper shape to be sent to the
@@ -299,14 +329,24 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         nothing.
 
         Parameters:
+        padding : {'repeat' | 'default' | None}
+            Controls the padding of data that has length smaller than
+            the largest array to be sent.  For thoses cases:
+            - if 'default', the array will be padded with
+              `default_value`
+            - if 'repeat', use the last data point as padding
+            - if None, no padding will be done, and an exception will
+              be thrown.
         default_value : float, optional
-            The value to be used in case the channel is not to receive data.
+            The value to be used in case the channel is not to receive
+            data, or for padding.
         channel_data_pairs : dict or key=value pairs, optional
-            Pairs of the form `<channel_name>=<list of values>` or a
+            Pairs of the form `<channel_name>=<array of values>` or a
             `dict` whose keys are `<channel name>` and values are
-            `<list of values>`.  The keys should be attributes of the
-            current object, an not any key.  The list of values should
-            all have the same length.
+            `<array of values>`.  The keys should be attributes of
+            current object that refer to
+            `nidaqmx._task_modules.channels.ao_channel.AOChannel`
+            objects.
 
         """
         if channel_data_pairs == {}:
@@ -314,6 +354,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         task_chans = list(self.ao_channels)
         if task_chans == []:
             return
+        if padding not in ['default', 'repeat', None]:
+            raise ValueError("'padding' should be one of {'default', 'repeat', None}")
         chosen_chans = {}
         for ch in channel_data_pairs.keys():
             try:
@@ -328,15 +370,46 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         try:
             lengths = [len(val) for val in channel_data_pairs.values()]
         except TypeError as err:
-            raise TypeError('the data inputs should be lists of values')
-        if True in (l != lengths[0] for l in lengths):
-            raise ValueError('all data input should have the same length')
-        data_out = np.ones((len(task_chans), lengths[0])) * default_value
+            raise TypeError('the data inputs should an array of values')
+        if not padding:
+            if True in (l != lengths[0] for l in lengths):
+                raise ValueError('all data input should have the same length')
+            else:
+                max_length = lengths[0]
+        else:
+            max_length = np.max(lengths)
+        data_out = np.ones((len(task_chans), max_length)) * default_value
         for name, ch in chosen_chans.items():
             i = task_chans.index(ch)
-            data_out[i, :] = channel_data_pairs[name]
+            ncols = len(channel_data_pairs[name])
+            if ncols < max_length:
+                if padding == 'default':
+                    data = np.ones((1, max_length)) * default_value
+                elif padding == 'repeat':
+                    data = np.ones((1, max_length)) * channel_data_pairs[name][-1]
+                data[0, 0:ncols] = channel_data_pairs[name]
+            else:
+                data = channel_data_pairs[name]
+            data_out[i, :] = data
         # Guarantee at least two samples per channel
         nrows, ncols = data_out.shape
         if ncols < 2:
             data_out = np.hstack((data_out, data_out))
         return data_out
+
+    def do_setup(self, args):
+        """Run setup procedure: setup [write]
+        If `write` is passed, prepare for writing to the device."""
+        try:
+            write_flag, *rest = args.split()
+        except ValueError:
+            write_flag = None
+        else:
+            if len(rest) > 0:
+                self.badinput("wrong number of arguments")
+                return
+        if write_flag is not None and write_flag != 'write':
+            self.badinput("try 'setup [write]'")
+            return
+        write_flag = write_flag == 'write'
+        self.setup(write=write_flag)
