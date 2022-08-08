@@ -37,7 +37,7 @@ class InteractiveExperiment(cmd.Cmd):
         """Run the setup."""
         return self.setup()
 
-    def do_variables(self, *args_):
+    def help_variables(self):
         """List all variables that can be changed."""
         names = dir(self)
         var_names = [name[4:] for name in names if name.startswith('set_')]
