@@ -356,6 +356,7 @@ defined in current experiment")
         data = self.prepare_write_data(**data)
         if data is None:
             return
+        data = np.squeeze(data)
         self.write_task.stop()
         try:
             self.write_task.write(data, auto_start=True)
