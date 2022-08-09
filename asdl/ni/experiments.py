@@ -164,7 +164,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         SingleDevice.__init__(self, device_name)
         self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
         for i, mirror_chan in enumerate(
-                [mirror_x_chan, mirror_y_chan, excit_chan, read_chan]):
+                [mirror_x_chan, mirror_y_chan, excit_chan]):
             if mirror_chan is not None:
                 ch = self.add_ao_voltage_chan(
                     mirror_chan,
@@ -177,8 +177,13 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                     self.mirror_y_chan = ch
                 elif i == 2:
                     self.excit_chan = ch
-                else:
-                    self.read_chan = ch
+        if read_chan is not None:
+            ch = self.add_ai_voltage_chan(
+                read_chan,
+                min_val=self._min_max[0],
+                max_val=self._min_max[1],
+            )
+            self.read_chan = ch
 
         self.samples_per_chan = 2
         self.distance = float(distance)
