@@ -511,3 +511,7 @@ defined in current experiment")
             self.store_variables('local')
             self.data_in.last.data_read = data
         return data
+
+    def do_read(self, _):
+        """Read data and store it"""
+        self.read(nsamples='all', store=True)
