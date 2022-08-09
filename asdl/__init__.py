@@ -51,4 +51,11 @@ class DataCollection(collections.UserList, MeasuredData):
     list :
         A list data objects to be saved.
     """
-    pass
+    @property
+    def last(self):
+        """the last object in the list"""
+        return self[-1]
+
+    @last.setter
+    def last(self, value):
+        self[-1] = value
