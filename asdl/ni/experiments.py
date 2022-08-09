@@ -180,6 +180,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                 else:
                     self.read_chan = ch
 
+        self.samples_per_chan = 2
         self.distance = float(distance)
         self.sampl_rate = float(sampl_rate)
         self.volt_deg_scale = float(volt_deg_scale)
@@ -273,6 +274,7 @@ defined in current experiment")
                 if self.mirror_y_chan is not None:
                     data['mirror_y_chan'] = [y_volt]
                 data = self.prepare_write_data(padding='repeat', **data)
+        self.samples_per_chan = nsamps
         self.stop()
         self.cfg_samp_clk_timing(
             self.sampl_rate,
