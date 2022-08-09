@@ -505,11 +505,11 @@ defined in current experiment")
             False, do not store anything.  Default is True.
 
         """
+        self.setup(write=True)
         if nsamples == 'all':
             nsamples = self.samples_per_chan
         else:
             nsamples = int(nsamples)
-        self.setup(write=True)
         data = self.read_task.read(nsamples)
         data = self.postprocess(data)
         if store:
