@@ -331,6 +331,22 @@ defined in current experiment")
             else:
                 self.badinput("try 'point [X [Y]]'")
                 return
+        self.point()
+
+    def point(self, x=None, y=None):
+        """Move laser point to position (x, y).
+
+        Parameters:
+        x : float, optional
+           The x-coordinate. If None (the default), uses current value
+           of `x_pos` attribute.
+        y : float
+           The y-coordnate.  If None (the default), uses current value
+           of `y_pos` attribute.
+
+        """
+        self.x_pos = self.x_pos if x is None else float(x)
+        self.y_pos = self.y_pos if y is None else float(y)
         x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
         data = {}
         if self.mirror_x_chan is not None:
