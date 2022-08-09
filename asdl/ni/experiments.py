@@ -4,7 +4,7 @@ import numpy as np
 import traceback
 import sys
 from . import SingleDevice
-from .. import DataCollection
+from .. import MeasuredData, DataCollection
 
 
 class InteractiveExperiment(cmd.Cmd):
@@ -476,3 +476,33 @@ defined in current experiment")
             return
         write_flag = write_flag == 'write'
         self.setup(write=write_flag)
+
+    def read(self, nsamples='all', store=True):
+        """Read data from the read task.
+
+        Run the setup with 'write' option, read data from the read
+        task, optionally store it, and return the data.
+
+        Parameters:
+        nsamples : {'all' | int}, optional
+            The number of samples to be read.  If 'all' read the same
+            number of samples there are in `data_out`.  If an int is
+            given, read only that number of samples, which is still
+            has the length of `data_out` as the upper bound.  Default
+            is 'all'.
+        store : bool, optional
+            If True, store the read data and local variables.  If
+            False, do not store anything.  Default is True.
+
+        """
+        if nsamples == 'all':
+            nsamples = self.samples_per_chan
+        else:
+            nsamples = int(nsamples)
+        self.setup(write=True)
+        data = self.read_task.read(nsamples)
+        if store:
+            self.data_in.append(MeasuredData())
+            self.store_variables('local')
+            self.data_in.last.data_read = data
+        return data
