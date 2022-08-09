@@ -486,7 +486,8 @@ defined in current experiment")
         """Read data from the read task.
 
         Run the setup with 'write' option, read data from the read
-        task, optionally store it, and return the data.
+        task, run `postprocess` on the data, optionally store it, and
+        finally return it.
 
         Parameters:
         nsamples : {'all' | int}, optional
@@ -506,6 +507,7 @@ defined in current experiment")
             nsamples = int(nsamples)
         self.setup(write=True)
         data = self.read_task.read(nsamples)
+        data = self.postprocess(data)
         if store:
             self.data_in.append(MeasuredData())
             self.store_variables('local')
@@ -515,3 +517,17 @@ defined in current experiment")
     def do_read(self, _):
         """Read data and store it"""
         self.read(nsamples='all', store=True)
+
+    def postprocess(self, data):
+        """Post-process the data.
+
+        Function to be applied to the raw data returned by the device.
+        If not overridden, this is the identity function, i.e.
+        f(x) = x.
+
+        Parameters:
+        data : list
+            The list floats returned by NI-DAQmx.
+
+        """
+        return data
