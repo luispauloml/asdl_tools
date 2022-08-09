@@ -145,6 +145,7 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
     read_chan = None
     data_out = None
     global_variables = ['data_out']
+    local_variables = ['y_pos', 'x_pos', 'sampl_rate']
 
     def __init__(
             self,
@@ -185,29 +186,50 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.x_pos = 0.0
         self.y_pos = 0.0
         self.data_in = DataCollection()
-        self.store_global_variables()
+        self.store_variables('global')
 
-    def store_global_variables(self):
-        """Store or update variables to be saved
+    def store_variables(self, local_or_global, index=-1):
+        """Store or update variables to be saved.
 
-        Store variables that will be saved with the collection of data
-        read in the experiment.  The list of variable is the
-        `global_variables` class attribute.  The default list is
-        ['data_out'].
+        Store variables of current experiment in collection of data so
+        that it can be saved.  The list of variables are class
+        attributes:
+        - `global_variables`, default=['data_out']
+        - `local_variables`, default=['x_pos', 'y_pos', 'sampl_rate']
+
+        Parameters:
+        local_or_global : {'local' | 'global'}
+            Controls whether the variables will be saved as a global
+            variable in the collection of experiments, or as local
+            variables for one single experiment.
+        index : int, optional
+            If `local_or_global` is 'local', then `index` indicates
+            the index of the experiment in which the variables should
+            be stored.  The default is -1, the last added data.
 
         """
+        if local_or_global == 'local':
+            attr = 'local_variables'
+        elif local_or_global == 'global':
+            attr = 'global_variables'
+        else:
+            raise ValueError(
+                f"expected 'local_or_global' or global one of \
+{'local' | 'global'}, got '{str(local_or_global)}'"
+            )
         try:
-            getattr(self, 'global_variables')
+            var_names = getattr(self, attr)
         except AttributeError:
-            raise AttributeError("'global_variables' not found")
+            raise AttributeError(f"'{attr}' not found")
         if not isinstance(self.global_variables, list):
             raise TypeError(
-                "expected 'global_variables' as a list, got {0}".format(
+                "expected '{0}' as a list, got {1}".format(
+                    attr,
                     type(self.global_variables)
                 )
             )
         data = {}
-        for var_name in self.global_variables:
+        for var_name in var_names:
             if not isinstance(var_name, str):
                 raise TypeError(
                     f'expected variable name as str, got {type(var_name)}'
@@ -217,7 +239,10 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             except AttributeError:
                 raise AttributeError(f"variable '{var_name}' is not \
 defined in current experiment")
-        self.data_in.__dict__.update(data)
+        if local_or_global == 'global':
+            self.data_in.__dict__.update(data)
+        else:
+            self.data_in[index].__dict__.update(data)
 
     def setup(self, write=False):
         """Set sampling rate and samples per channel.
