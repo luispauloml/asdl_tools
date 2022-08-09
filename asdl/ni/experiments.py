@@ -485,9 +485,13 @@ defined in current experiment")
     def read(self, nsamples='all', store=True):
         """Read data from the read task.
 
-        Run the setup with 'write' option, read data from the read
-        task, run `postprocess` on the data, optionally store it, and
-        finally return it.
+        This method has several steps:
+        1. run the setup with 'write' option,
+        2. read data from the read task,
+        3. run `postprocess` on the data,
+        4. optionally store it,
+        5. run `read_hook`,
+        6. return the post-processed data.
 
         Parameters:
         nsamples : {'all' | int}, optional
@@ -512,6 +516,7 @@ defined in current experiment")
             self.data_in.append(MeasuredData())
             self.store_variables('local')
             self.data_in.last.data_read = data
+        self.read_hook()
         return data
 
     def do_read(self, _):
@@ -531,3 +536,12 @@ defined in current experiment")
 
         """
         return data
+
+    def read_hook(self):
+        """Hook to be run after reading and post-processing data.
+
+        It should not receive any argument.  If not overridden, it
+        does nothing.
+
+        """
+        pass
