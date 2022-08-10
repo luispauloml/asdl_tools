@@ -3,7 +3,7 @@ import nidaqmx
 import numpy as np
 import traceback
 import sys
-from . import SingleDevice
+from . import SingleDevice, _dispatch
 from .. import MeasuredData, DataCollection
 
 
@@ -562,3 +562,7 @@ defined in current experiment")
 
         """
         pass
+
+    @_dispatch(DataCollection.save, 'DataCollection.save')
+    def save(self, *args, **kwargs):
+        self.data_in.save(*args, **kwargs)
