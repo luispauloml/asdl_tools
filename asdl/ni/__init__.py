@@ -6,7 +6,19 @@ import warnings
 import functools
 
 
-__all__ = ['Task', 'SingleDevice']
+__all__ = ['Task', 'SingleDevice', 'available_devices']
+
+
+def available_devices():
+    """List of NI-DAQ devices connected to current machine.
+
+    Returns a list of `nidaqmx.system.device.Device` objects
+    representing each device currently connected and detected by
+    NI-DAQmx drivers.
+
+    """
+    system = nidaqmx.system.System.local()
+    return list(system.devices)
 
 
 def _catch_excpetions(funcs, except_type, except_codes=None,
