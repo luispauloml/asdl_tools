@@ -137,7 +137,7 @@ class InteractiveExperiment(cmd.Cmd):
             self.stdout.write(repr(val) + '\n')
 
 
-class LaserExperiment(InteractiveExperiment, SingleDevice):
+class LaserExperiment(InteractiveExperiment):
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
@@ -149,7 +149,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
 
     def __init__(
             self,
-            device_name,
+            laser_device,
+            mirrors_device,
             mirror_x_chan=None,
             mirror_y_chan=None,
             excit_chan=None,
@@ -161,12 +162,20 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             volt_deg_scale=0.24,
     ):
         InteractiveExperiment.__init__(self)
-        SingleDevice.__init__(self, device_name)
-        self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
-        for i, mirror_chan in enumerate(
-                [mirror_x_chan, mirror_y_chan, excit_chan]):
+
+        self.laser_task = SingleDevice(laser_device)
+        self.mirrors_task = SingleDevice(mirrors_device)
+        self._devices = (self.laser_task.device, self.mirrors_task.device)
+
+        self._min_max = (float(min_out_volt), float(max_out_volt))
+
+        if mirror_x_chan is None:
+            mirror_x_chan = self.mirror_x_chan
+        if mirror_y_chan is None:
+            mirror_y_chan = self.mirror_y_chan
+        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
             if mirror_chan is not None:
-                ch = self.add_ao_voltage_chan(
+                ch = self.mirrors_task.add_ao_voltage_chan(
                     mirror_chan,
                     min_val=self._min_max[0],
                     max_val=self._min_max[1]
@@ -175,15 +184,28 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                     self.mirror_x_chan = ch
                 elif i == 1:
                     self.mirror_y_chan = ch
-                elif i == 2:
-                    self.excit_chan = ch
-        if read_chan is not None:
-            ch = self.add_ai_voltage_chan(
-                read_chan,
+
+        read_chan = [ch
+                     for ch in [read_chan, self.read_chan]
+                     if ch is not None]
+        if read_chan != []:
+            ch = self.laser_task.add_ai_voltage_chan(
+                read_chan[0],
                 min_val=self._min_max[0],
                 max_val=self._min_max[1],
             )
             self.read_chan = ch
+
+        excit_chan = [ch
+                      for ch in [excit_chan, self.excit_chan]
+                      if ch is not None]
+        if excit_chan != []:
+            ch = self.laser_task.add_ao_voltage_chan(
+                excit_chan[0],
+                min_val=self._min_max[0],
+                max_val=self._min_max[1],
+            )
+            self.excit_chan = ch
 
         self.samples_per_chan = 2
         self.distance = float(distance)
