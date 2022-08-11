@@ -584,7 +584,7 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
             nsamples = self.samples_per_chan
         else:
             nsamples = int(nsamples)
-        data = self.read_task.read(nsamples)
+        data = self.laser_task.read_task.read(nsamples)
         data = self.postprocess(data)
         if store:
             self.data_in.append(MeasuredData())
