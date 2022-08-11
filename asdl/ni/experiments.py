@@ -216,6 +216,17 @@ class LaserExperiment(InteractiveExperiment):
         self.data_in = DataCollection()
         self.store_variables('global')
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.laser_task.close()
+        self.mirrors_task.close()
+
+    def __del__(self):
+        self.laser_task.__del__()
+        self.mirrors_task.__del__()
+
     def store_variables(self, local_or_global, index=-1):
         """Store or update variables to be saved.
 
