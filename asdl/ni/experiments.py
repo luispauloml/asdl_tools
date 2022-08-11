@@ -447,9 +447,12 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         """Prepare data to be sent to device.
 
         Prepares a numpy.ndarray with proper shape to be sent to the
-        device.  If no channel is defined in current object, returns
-        nothing.  If no `channel_data_pairs` is provided, returns
-        nothing.
+        devices and returns a tuple of two elements:
+        - the first is the array to be sent to the mirrors,
+        - the second is the array to be sent to the excitation channel.
+        If no channel is defined in current object, returns a tuple of
+        None values.  nothing.  If no `channel_data_pairs` is
+        provided, returns a tuple of None values.
 
         Parameters:
         padding : {'repeat' | 'default' | None}
@@ -466,59 +469,80 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         channel_data_pairs : dict or key=value pairs, optional
             Pairs of the form `<channel_name>=<array of values>` or a
             `dict` whose keys are `<channel name>` and values are
-            `<array of values>`.  The keys should be attributes of
-            current object that refer to
-            `nidaqmx._task_modules.channels.ao_channel.AOChannel`
-            objects.
-
+            `<array of values>`.  The keys should be any of the following:
+            - 'mirror_x_chan'
+            - 'mirror_y_chan'
+            - 'excit_chan'.
         """
         if channel_data_pairs == {}:
-            return
-        task_chans = list(self.ao_channels)
-        if task_chans == []:
-            return
-        if padding not in ['default', 'repeat', None]:
-            raise ValueError("'padding' should be one of {'default', 'repeat', None}")
+            return (None, None)
+        mirror_chans = list(self.mirrors_task.ao_channels)
         chosen_chans = {}
         for ch in channel_data_pairs.keys():
             try:
                 val = getattr(self, ch)
             except AttributeError:
-                raise AttributeError(f"channel '{ch}' is not defined")
+                raise AttributeError(f"channel '{ch}' is not valid")
             else:
-                if val not in task_chans:
+                # Check if the channel can be used in the function.
+                # Add None because it because mirror_chans can be []
+                # while excit_chan is not None, which would raise an
+                # error even though this is a valid situation.
+                if val not in mirror_chans + [self.excit_chan, None]:
                     raise ValueError(f"channel '{ch}' is not valid")
                 else:
                     chosen_chans[ch] = val
-        try:
-            lengths = [len(val) for val in channel_data_pairs.values()]
-        except TypeError as err:
-            raise TypeError('the data inputs should an array of values')
-        if not padding:
-            if True in (l != lengths[0] for l in lengths):
-                raise ValueError('all data input should have the same length')
+        if mirror_chans == [] and self.excit_chan is None:
+            return (None, None)
+
+        lengths = {}
+        mirror_pairs = {}
+        for ch in ['mirror_x_chan', 'mirror_y_chan']:
+            try:
+                data = channel_data_pairs[ch]
+            except KeyError:
+                pass
             else:
-                max_length = lengths[0]
+                if getattr(self, ch) is not None:
+                    mirror_pairs[ch] = data
+                    lengths[ch] = len(data)
+        if mirror_pairs == {}:
+            mirror_data = None
         else:
-            max_length = np.max(lengths)
-        data_out = np.ones((len(task_chans), max_length)) * default_value
-        for name, ch in chosen_chans.items():
-            i = task_chans.index(ch)
-            ncols = len(channel_data_pairs[name])
-            if ncols < max_length:
-                if padding == 'default':
-                    data = np.ones((1, max_length)) * default_value
-                elif padding == 'repeat':
-                    data = np.ones((1, max_length)) * channel_data_pairs[name][-1]
-                data[0, 0:ncols] = channel_data_pairs[name]
+            mirror_data = []
+        try:
+            data = channel_data_pairs['excit_chan']
+        except KeyError:
+            excit_data = None
+        else:
+            if self.excit_chan is not None:
+                excit_data = data
+                lengths['excit_chan'] = len(data)
             else:
-                data = channel_data_pairs[name]
-            data_out[i, :] = data
-        # Guarantee at least two samples per channel
-        nrows, ncols = data_out.shape
-        if ncols < 2:
-            data_out = np.hstack((data_out, data_out))
-        return data_out
+                excit_data = None
+
+        max_length = np.max(list(lengths.values()))
+
+        if mirror_data is not None:
+            mirror_data = np.ones((len(mirror_chans), max_length)) * \
+                default_value
+            for ch in mirror_pairs.keys():
+                if padding == 'default':
+                    data = np.ones((max_length,)) * default_value
+                elif padding == 'repeat':
+                    data = np.ones((max_length,)) * mirror_pairs[ch][-1]
+                data[:lengths[ch]] = mirror_pairs[ch]
+                mirror_data[mirror_chans.index(chosen_chans[ch]), :] = data
+
+        if excit_data is not None:
+            if padding == 'default':
+                data = np.ones((max_length,)) * default_value
+            elif padding == 'repeat':
+                data = np.ones((max_length,)) * excit_data[-1]
+            data[:lengths['excit_chan']] = excit_data
+            excit_data = data
+
+        return mirror_data, excit_data
 
     def do_setup(self, args):
         """Run setup procedure: setup [write]
