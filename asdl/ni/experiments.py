@@ -227,6 +227,16 @@ class LaserExperiment(InteractiveExperiment):
         self.laser_task.__del__()
         self.mirrors_task.__del__()
 
+    @property
+    def laser_device(self):
+        """the device used to read from laser and write to vibration source"""
+        return self.laser_task.device
+
+    @property
+    def mirrors_device(self):
+        """the device used to control X and Y mirros"""
+        return self.mirrors_task.device
+
     def store_variables(self, local_or_global, index=-1):
         """Store or update variables to be saved.
 
