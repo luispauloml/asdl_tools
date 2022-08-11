@@ -424,11 +424,14 @@ defined in current experiment")
 
     def help_system(self):
         """Show information about the system."""
-        self.stdout.write('\nDevice:\n')
+        self.stdout.write('\nDevices:\n')
         if self.ruler:
-            self.stdout.write(f'{self.ruler * 7}\n')
-        self.stdout.write(f'Name:\t{self.device.name}\n')
-        self.stdout.write(f'Type:\t{self.device.product_type}\n\n')
+            self.stdout.write(f'{self.ruler * 8}\n')
+        self.stdout.write(f"""Device\t\tName\t\tType
+------\t\t----\t\t----
+Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}
+Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
+\n""")
         self.stdout.write('Channels:\n')
         if self.ruler:
                 self.stdout.write(f'{self.ruler * 9}\n')
