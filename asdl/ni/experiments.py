@@ -137,7 +137,7 @@ class InteractiveExperiment(cmd.Cmd):
             self.stdout.write(repr(val) + '\n')
 
 
-class LaserExperiment(InteractiveExperiment, SingleDevice):
+class LaserExperiment(InteractiveExperiment):
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
@@ -149,7 +149,8 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
 
     def __init__(
             self,
-            device_name,
+            laser_device,
+            mirrors_device,
             mirror_x_chan=None,
             mirror_y_chan=None,
             excit_chan=None,
@@ -161,12 +162,20 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
             volt_deg_scale=0.24,
     ):
         InteractiveExperiment.__init__(self)
-        SingleDevice.__init__(self, device_name)
-        self._min_max = tuple(val for val in (min_out_volt, max_out_volt))
-        for i, mirror_chan in enumerate(
-                [mirror_x_chan, mirror_y_chan, excit_chan]):
+
+        self.laser_task = SingleDevice(laser_device)
+        self.mirrors_task = SingleDevice(mirrors_device)
+        self._devices = (self.laser_task.device, self.mirrors_task.device)
+
+        self._min_max = (float(min_out_volt), float(max_out_volt))
+
+        if mirror_x_chan is None:
+            mirror_x_chan = self.mirror_x_chan
+        if mirror_y_chan is None:
+            mirror_y_chan = self.mirror_y_chan
+        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
             if mirror_chan is not None:
-                ch = self.add_ao_voltage_chan(
+                ch = self.mirrors_task.add_ao_voltage_chan(
                     mirror_chan,
                     min_val=self._min_max[0],
                     max_val=self._min_max[1]
@@ -175,15 +184,28 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
                     self.mirror_x_chan = ch
                 elif i == 1:
                     self.mirror_y_chan = ch
-                elif i == 2:
-                    self.excit_chan = ch
-        if read_chan is not None:
-            ch = self.add_ai_voltage_chan(
-                read_chan,
+
+        read_chan = [ch
+                     for ch in [read_chan, self.read_chan]
+                     if ch is not None]
+        if read_chan != []:
+            ch = self.laser_task.add_ai_voltage_chan(
+                read_chan[0],
                 min_val=self._min_max[0],
                 max_val=self._min_max[1],
             )
             self.read_chan = ch
+
+        excit_chan = [ch
+                      for ch in [excit_chan, self.excit_chan]
+                      if ch is not None]
+        if excit_chan != []:
+            ch = self.laser_task.add_ao_voltage_chan(
+                excit_chan[0],
+                min_val=self._min_max[0],
+                max_val=self._min_max[1],
+            )
+            self.excit_chan = ch
 
         self.samples_per_chan = 2
         self.distance = float(distance)
@@ -193,6 +215,27 @@ class LaserExperiment(InteractiveExperiment, SingleDevice):
         self.y_pos = 0.0
         self.data_in = DataCollection()
         self.store_variables('global')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.laser_task.close()
+        self.mirrors_task.close()
+
+    def __del__(self):
+        self.laser_task.__del__()
+        self.mirrors_task.__del__()
+
+    @property
+    def laser_device(self):
+        """the device used to read from laser and write to vibration source"""
+        return self.laser_task.device
+
+    @property
+    def mirrors_device(self):
+        """the device used to control X and Y mirros"""
+        return self.mirrors_task.device
 
     def store_variables(self, local_or_global, index=-1):
         """Store or update variables to be saved.
@@ -251,7 +294,7 @@ defined in current experiment")
             self.data_in[index].__dict__.update(data)
 
     def setup(self, write=False):
-        """Set sampling rate and samples per channel.
+        """Set sampling rate and samples per channel for laser task.
 
         If `LaserExperiment.data_out` is None or `write` is False, the
         number of samples per channel will set to 2.
@@ -272,23 +315,18 @@ defined in current experiment")
                 if len(nsamps) != 1:
                     raise ValueError("cannot write: 'data_out' should be 1D array")
                 nsamps, = nsamps
-                x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
                 data = {'excit_chan': self.data_out}
-                if self.mirror_x_chan is not None:
-                    data['mirror_x_chan'] = [x_volt]
-                if self.mirror_y_chan is not None:
-                    data['mirror_y_chan'] = [y_volt]
-                data = self.prepare_write_data(padding='repeat', **data)
+                _, data = self.prepare_write_data(padding='repeat', **data)
         self.samples_per_chan = nsamps
-        self.stop()
-        self.cfg_samp_clk_timing(
+        self.laser_task.stop()
+        self.laser_task.cfg_samp_clk_timing(
             self.sampl_rate,
             sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
             samps_per_chan=nsamps,
         )
         if write:
-            self.write(data, auto_start=False)
-            self.synchronize()
+            self.laser_task.write(data, auto_start=False)
+            self.laser_task.synchronize()
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
@@ -353,13 +391,13 @@ defined in current experiment")
             data['mirror_x_chan'] = [x_volt]
         if self.mirror_y_chan is not None:
             data['mirror_y_chan'] = [y_volt]
-        data = self.prepare_write_data(**data)
+        data, _ = self.prepare_write_data(**data)
         if data is None:
             return
         data = np.squeeze(data)
-        self.write_task.stop()
+        self.mirrors_task.write_task.stop()
         try:
-            self.write_task.write(data, auto_start=True)
+            self.mirrors_task.write_task.write(data, auto_start=True)
         except nidaqmx.errors.DaqWriteError as err:
             self.stdout.write(f'*** Error: {err.args[0]}\n\n')
 
@@ -381,11 +419,14 @@ defined in current experiment")
 
     def help_system(self):
         """Show information about the system."""
-        self.stdout.write('\nDevice:\n')
+        self.stdout.write('\nDevices:\n')
         if self.ruler:
-            self.stdout.write(f'{self.ruler * 7}\n')
-        self.stdout.write(f'Name:\t{self.device.name}\n')
-        self.stdout.write(f'Type:\t{self.device.product_type}\n\n')
+            self.stdout.write(f'{self.ruler * 8}\n')
+        self.stdout.write(f"""Device\t\tName\t\tType
+------\t\t----\t\t----
+Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}
+Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
+\n""")
         self.stdout.write('Channels:\n')
         if self.ruler:
                 self.stdout.write(f'{self.ruler * 9}\n')
@@ -396,22 +437,17 @@ defined in current experiment")
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
 
-    def do_start(self, *args_):
-        """Start the experiment."""
-        self.start()
-
-    def do_stop(self, *args_):
-        """Stop the experiment."""
-        self.stop()
-
     def prepare_write_data(self, padding='repeat', default_value=0,
                            **channel_data_pairs):
         """Prepare data to be sent to device.
 
         Prepares a numpy.ndarray with proper shape to be sent to the
-        device.  If no channel is defined in current object, returns
-        nothing.  If no `channel_data_pairs` is provided, returns
-        nothing.
+        devices and returns a tuple of two elements:
+        - the first is the array to be sent to the mirrors,
+        - the second is the array to be sent to the excitation channel.
+        If no channel is defined in current object, returns a tuple of
+        None values.  nothing.  If no `channel_data_pairs` is
+        provided, returns a tuple of None values.
 
         Parameters:
         padding : {'repeat' | 'default' | None}
@@ -428,59 +464,80 @@ defined in current experiment")
         channel_data_pairs : dict or key=value pairs, optional
             Pairs of the form `<channel_name>=<array of values>` or a
             `dict` whose keys are `<channel name>` and values are
-            `<array of values>`.  The keys should be attributes of
-            current object that refer to
-            `nidaqmx._task_modules.channels.ao_channel.AOChannel`
-            objects.
-
+            `<array of values>`.  The keys should be any of the following:
+            - 'mirror_x_chan'
+            - 'mirror_y_chan'
+            - 'excit_chan'.
         """
         if channel_data_pairs == {}:
-            return
-        task_chans = list(self.ao_channels)
-        if task_chans == []:
-            return
-        if padding not in ['default', 'repeat', None]:
-            raise ValueError("'padding' should be one of {'default', 'repeat', None}")
+            return (None, None)
+        mirror_chans = list(self.mirrors_task.ao_channels)
         chosen_chans = {}
         for ch in channel_data_pairs.keys():
             try:
                 val = getattr(self, ch)
             except AttributeError:
-                raise AttributeError(f"channel '{ch}' is not defined")
+                raise AttributeError(f"channel '{ch}' is not valid")
             else:
-                if val not in task_chans:
+                # Check if the channel can be used in the function.
+                # Add None because it because mirror_chans can be []
+                # while excit_chan is not None, which would raise an
+                # error even though this is a valid situation.
+                if val not in mirror_chans + [self.excit_chan, None]:
                     raise ValueError(f"channel '{ch}' is not valid")
                 else:
                     chosen_chans[ch] = val
-        try:
-            lengths = [len(val) for val in channel_data_pairs.values()]
-        except TypeError as err:
-            raise TypeError('the data inputs should an array of values')
-        if not padding:
-            if True in (l != lengths[0] for l in lengths):
-                raise ValueError('all data input should have the same length')
+        if mirror_chans == [] and self.excit_chan is None:
+            return (None, None)
+
+        lengths = {}
+        mirror_pairs = {}
+        for ch in ['mirror_x_chan', 'mirror_y_chan']:
+            try:
+                data = channel_data_pairs[ch]
+            except KeyError:
+                pass
             else:
-                max_length = lengths[0]
+                if getattr(self, ch) is not None:
+                    mirror_pairs[ch] = data
+                    lengths[ch] = len(data)
+        if mirror_pairs == {}:
+            mirror_data = None
         else:
-            max_length = np.max(lengths)
-        data_out = np.ones((len(task_chans), max_length)) * default_value
-        for name, ch in chosen_chans.items():
-            i = task_chans.index(ch)
-            ncols = len(channel_data_pairs[name])
-            if ncols < max_length:
-                if padding == 'default':
-                    data = np.ones((1, max_length)) * default_value
-                elif padding == 'repeat':
-                    data = np.ones((1, max_length)) * channel_data_pairs[name][-1]
-                data[0, 0:ncols] = channel_data_pairs[name]
+            mirror_data = []
+        try:
+            data = channel_data_pairs['excit_chan']
+        except KeyError:
+            excit_data = None
+        else:
+            if self.excit_chan is not None:
+                excit_data = data
+                lengths['excit_chan'] = len(data)
             else:
-                data = channel_data_pairs[name]
-            data_out[i, :] = data
-        # Guarantee at least two samples per channel
-        nrows, ncols = data_out.shape
-        if ncols < 2:
-            data_out = np.hstack((data_out, data_out))
-        return data_out
+                excit_data = None
+
+        max_length = np.max(list(lengths.values()))
+
+        if mirror_data is not None:
+            mirror_data = np.ones((len(mirror_chans), max_length)) * \
+                default_value
+            for ch in mirror_pairs.keys():
+                if padding == 'default':
+                    data = np.ones((max_length,)) * default_value
+                elif padding == 'repeat':
+                    data = np.ones((max_length,)) * mirror_pairs[ch][-1]
+                data[:lengths[ch]] = mirror_pairs[ch]
+                mirror_data[mirror_chans.index(chosen_chans[ch]), :] = data
+
+        if excit_data is not None:
+            if padding == 'default':
+                data = np.ones((max_length,)) * default_value
+            elif padding == 'repeat':
+                data = np.ones((max_length,)) * excit_data[-1]
+            data[:lengths['excit_chan']] = excit_data
+            excit_data = data
+
+        return mirror_data, excit_data
 
     def do_setup(self, args):
         """Run setup procedure: setup [write]
@@ -527,7 +584,7 @@ defined in current experiment")
             nsamples = self.samples_per_chan
         else:
             nsamples = int(nsamples)
-        data = self.read_task.read(nsamples)
+        data = self.laser_task.read_task.read(nsamples)
         data = self.postprocess(data)
         if store:
             self.data_in.append(MeasuredData())
