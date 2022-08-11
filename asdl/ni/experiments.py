@@ -294,7 +294,7 @@ defined in current experiment")
             self.data_in[index].__dict__.update(data)
 
     def setup(self, write=False):
-        """Set sampling rate and samples per channel.
+        """Set sampling rate and samples per channel for laser task.
 
         If `LaserExperiment.data_out` is None or `write` is False, the
         number of samples per channel will set to 2.
@@ -315,23 +315,18 @@ defined in current experiment")
                 if len(nsamps) != 1:
                     raise ValueError("cannot write: 'data_out' should be 1D array")
                 nsamps, = nsamps
-                x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
                 data = {'excit_chan': self.data_out}
-                if self.mirror_x_chan is not None:
-                    data['mirror_x_chan'] = [x_volt]
-                if self.mirror_y_chan is not None:
-                    data['mirror_y_chan'] = [y_volt]
-                data = self.prepare_write_data(padding='repeat', **data)
+                _, data = self.prepare_write_data(padding='repeat', **data)
         self.samples_per_chan = nsamps
-        self.stop()
-        self.cfg_samp_clk_timing(
+        self.laser_task.stop()
+        self.laser_task.cfg_samp_clk_timing(
             self.sampl_rate,
             sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
             samps_per_chan=nsamps,
         )
         if write:
-            self.write(data, auto_start=False)
-            self.synchronize()
+            self.laser_task.write(data, auto_start=False)
+            self.laser_task.synchronize()
 
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
