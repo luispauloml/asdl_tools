@@ -396,13 +396,13 @@ defined in current experiment")
             data['mirror_x_chan'] = [x_volt]
         if self.mirror_y_chan is not None:
             data['mirror_y_chan'] = [y_volt]
-        data = self.prepare_write_data(**data)
+        data, _ = self.prepare_write_data(**data)
         if data is None:
             return
         data = np.squeeze(data)
-        self.write_task.stop()
+        self.mirrors_task.write_task.stop()
         try:
-            self.write_task.write(data, auto_start=True)
+            self.mirrors_task.write_task.write(data, auto_start=True)
         except nidaqmx.errors.DaqWriteError as err:
             self.stdout.write(f'*** Error: {err.args[0]}\n\n')
 
