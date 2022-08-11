@@ -396,14 +396,6 @@ defined in current experiment")
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
 
-    def do_start(self, *args_):
-        """Start the experiment."""
-        self.start()
-
-    def do_stop(self, *args_):
-        """Stop the experiment."""
-        self.stop()
-
     def prepare_write_data(self, padding='repeat', default_value=0,
                            **channel_data_pairs):
         """Prepare data to be sent to device.
