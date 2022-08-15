@@ -335,8 +335,6 @@ defined in current experiment")
                 if len(nsamps) != 1:
                     raise ValueError("cannot write: 'data_out' should be 1D array")
                 nsamps, = nsamps
-                data = {'excit_chan': self.data_out}
-                _, data = self.prepare_write_data(padding='repeat', **data)
         self.samples_per_chan = nsamps
         self.laser_task.stop()
         self.laser_task.cfg_samp_clk_timing(
@@ -345,7 +343,7 @@ defined in current experiment")
             samps_per_chan=nsamps,
         )
         if write:
-            self.laser_task.write(data, auto_start=False)
+            self.laser_task.write(self.data_out, auto_start=False)
             self.laser_task.synchronize()
 
     def set_sampl_rate(self, value):
@@ -405,16 +403,17 @@ defined in current experiment")
         """
         self.x_pos = self.x_pos if x is None else float(x)
         self.y_pos = self.y_pos if y is None else float(y)
-        x_volt, y_volt = self.pos_to_volt_array(self.x_pos, self.y_pos)
-        data = {}
-        if self.mirror_x_chan is not None:
-            data['mirror_x_chan'] = [x_volt]
-        if self.mirror_y_chan is not None:
-            data['mirror_y_chan'] = [y_volt]
-        data, _ = self.prepare_write_data(**data)
-        if data is None:
+        if self.mirror_x_chan is None and self.mirror_y_chan is None:
             return
-        data = np.squeeze(data)
+        volts = self.pos_to_volt_array(self.x_pos, self.y_pos)
+        idx = sort_channels(
+            self.mirrors_task.ao_channels,
+            [ch for ch in [self.mirror_x_chan, self.mirror_y_chan]
+             if ch is not None]
+        )
+        data = list(range(0, len(idx)))
+        for i in idx:
+            data[i] = volts[i]
         self.mirrors_task.write_task.stop()
         try:
             self.mirrors_task.write_task.write(data, auto_start=True)
@@ -456,108 +455,6 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
                  ('Reading', self.read_chan)]
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
-
-    def prepare_write_data(self, padding='repeat', default_value=0,
-                           **channel_data_pairs):
-        """Prepare data to be sent to device.
-
-        Prepares a numpy.ndarray with proper shape to be sent to the
-        devices and returns a tuple of two elements:
-        - the first is the array to be sent to the mirrors,
-        - the second is the array to be sent to the excitation channel.
-        If no channel is defined in current object, returns a tuple of
-        None values.  nothing.  If no `channel_data_pairs` is
-        provided, returns a tuple of None values.
-
-        Parameters:
-        padding : {'repeat' | 'default' | None}
-            Controls the padding of data that has length smaller than
-            the largest array to be sent.  For thoses cases:
-            - if 'default', the array will be padded with
-              `default_value`
-            - if 'repeat', use the last data point as padding
-            - if None, no padding will be done, and an exception will
-              be thrown.
-        default_value : float, optional
-            The value to be used in case the channel is not to receive
-            data, or for padding.
-        channel_data_pairs : dict or key=value pairs, optional
-            Pairs of the form `<channel_name>=<array of values>` or a
-            `dict` whose keys are `<channel name>` and values are
-            `<array of values>`.  The keys should be any of the following:
-            - 'mirror_x_chan'
-            - 'mirror_y_chan'
-            - 'excit_chan'.
-        """
-        if channel_data_pairs == {}:
-            return (None, None)
-        mirror_chans = list(self.mirrors_task.ao_channels)
-        chosen_chans = {}
-        for ch in channel_data_pairs.keys():
-            try:
-                val = getattr(self, ch)
-            except AttributeError:
-                raise AttributeError(f"channel '{ch}' is not valid")
-            else:
-                # Check if the channel can be used in the function.
-                # Add None because it because mirror_chans can be []
-                # while excit_chan is not None, which would raise an
-                # error even though this is a valid situation.
-                if val not in mirror_chans + [self.excit_chan, None]:
-                    raise ValueError(f"channel '{ch}' is not valid")
-                else:
-                    chosen_chans[ch] = val
-        if mirror_chans == [] and self.excit_chan is None:
-            return (None, None)
-
-        lengths = {}
-        mirror_pairs = {}
-        for ch in ['mirror_x_chan', 'mirror_y_chan']:
-            try:
-                data = channel_data_pairs[ch]
-            except KeyError:
-                pass
-            else:
-                if getattr(self, ch) is not None:
-                    mirror_pairs[ch] = data
-                    lengths[ch] = len(data)
-        if mirror_pairs == {}:
-            mirror_data = None
-        else:
-            mirror_data = []
-        try:
-            data = channel_data_pairs['excit_chan']
-        except KeyError:
-            excit_data = None
-        else:
-            if self.excit_chan is not None:
-                excit_data = data
-                lengths['excit_chan'] = len(data)
-            else:
-                excit_data = None
-
-        max_length = np.max(list(lengths.values()))
-
-        if mirror_data is not None:
-            mirror_data = np.ones((len(mirror_chans), max_length)) * \
-                default_value
-            for ch in mirror_pairs.keys():
-                if padding == 'default':
-                    data = np.ones((max_length,)) * default_value
-                elif padding == 'repeat':
-                    data = np.ones((max_length,)) * mirror_pairs[ch][-1]
-                data[:lengths[ch]] = mirror_pairs[ch]
-                mirror_data[mirror_chans.index(chosen_chans[ch]), :] = data
-
-        if excit_data is not None:
-            if padding == 'default':
-                data = np.ones((max_length,)) * default_value
-            elif padding == 'repeat':
-                data = np.ones((max_length,)) * excit_data[-1]
-            data[:lengths['excit_chan']] = excit_data
-            excit_data = data
-
-        return mirror_data, excit_data
 
     def do_setup(self, args):
         """Run setup procedure: setup [write]
