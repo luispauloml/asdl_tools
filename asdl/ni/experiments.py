@@ -7,6 +7,9 @@ from . import SingleDevice, _dispatch
 from .. import MeasuredData, DataCollection
 
 
+__all__ = ['InteractiveExperiment', 'LaserExperiment']
+
+
 def sort_channels(collection, channels):
     """Find the order of channels in a collection of channels.
 
