@@ -626,3 +626,8 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
             self.badinput(err.args[0])
             return
         self.point_offset = (x, y)
+
+    def do_save(self, file_name):
+        """Save data from experiment to a file: save FILENAME
+        Note: this command overwrites existing files."""
+        self.save(file_name, overwrite=True)
