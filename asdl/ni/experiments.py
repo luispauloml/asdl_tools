@@ -191,6 +191,7 @@ class LaserExperiment(InteractiveExperiment):
         self._devices = (self.laser_task.device, self.mirrors_task.device)
 
         self._min_max = (float(min_out_volt), float(max_out_volt))
+        self.point_offset = (0, 0)
 
         if mirror_x_chan is None:
             mirror_x_chan = self.mirror_x_chan
@@ -408,7 +409,8 @@ defined in current experiment")
         self.y_pos = self.y_pos if y is None else float(y)
         if self.mirror_x_chan is None and self.mirror_y_chan is None:
             return
-        volts = self.pos_to_volt_array(self.x_pos, self.y_pos)
+        volts = self.pos_to_volt_array(self.x_pos + self.point_offset[0],
+                                       self.y_pos + self.point_offset[1])
         idx = sort_channels(
             self.mirrors_task.ao_channels,
             [ch for ch in [self.mirror_x_chan, self.mirror_y_chan]
@@ -570,3 +572,57 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         else:
             self.y_pos += delta
         self.point()
+
+    def offset(self, x=None, y=None):
+        """Set offset for point position and set position to (0, 0).
+
+        The offset is such that the actual (x', y') position of the
+        laser point is:
+            x' = x + x_pos
+            y' = y + y_pos
+
+        Parameters:
+        x : float, optional
+            The offset in the X direction (cm).  If None, use current
+            position.
+    y : float, optional
+            The offset in the Y direction (cm).  If None, use current
+            position.
+
+        """
+        if x is None:
+            x = self.x_pos + self.point_offset[0]
+            new_x_pos = 0
+        else:
+            new_x_pos = self.x_pos
+        if y is None:
+            y = self.y_pos + self.point_offset[1]
+            new_y_pos = 0
+        else:
+            new_y_pos = self.y_pos
+        self.point_offset = (x, y)
+        self.x_pos, self.y_pos = new_x_pos, new_y_pos
+
+    def do_offset(self, _):
+        """Set current position (x, y) as offset."""
+        self.offset()
+
+    def set_point_offset(self, new_value):
+        """X and Y offset (cm, cm)"""
+        try:
+            x, y, *rest = eval(new_value)
+        except TypeError:
+            self.badinput(new_value)
+            return
+        except ValueError:
+            self.badinput(new_value)
+            return
+        else:
+            if len(rest) > 0:
+                self.badinput(new_value)
+        try:
+            x, y = float(x), float(y)
+        except ValueError as err:
+            self.badinput(err.args[0])
+            return
+        self.point_offset = (x, y)
