@@ -74,18 +74,18 @@ class InteractiveExperiment(cmd.Cmd):
             self.stdout.write('\n')
             for var_name, value, docstring \
                 in[('Name', 'Value', 'Documentation'),
-                   ('---------------', '----------', '-------------')]:
+                   ('---------------', '---------------', '-------------')]:
                 self.stdout.write(
-                    '{0:15}  {1:10}  {2}\n'.format(
+                    '{0:15}  {1:15}  {2}\n'.format(
                         var_name, value, docstring
                         )
                     )
             for var_name in var_names:
                 docstring = getattr(self, f'set_{var_name}').__doc__
                 self.stdout.write(
-                    '{0:15}  {1:10}  {2}\n'.format(
+                    '{0:15}  {1:15}  {2}\n'.format(
                         var_name,
-                        getattr(self, var_name),
+                        repr(getattr(self, var_name)),
                         docstring if docstring else '<no documentation>',
                     )
                 )
