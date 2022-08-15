@@ -543,3 +543,30 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     @_dispatch(DataCollection.save, 'DataCollection.save')
     def save(self, *args, **kwargs):
         self.data_in.save(*args, **kwargs)
+
+    def do_move(self, args):
+        """Move point: move {X | Y}  DELTA
+        Move point in direction X or Y by DELTA cm."""
+        try:
+            direction, delta, *rest = args.split()
+        except ValueError:
+            self.badinput(args)
+            return
+        else:
+            if len(rest) > 0:
+                self.badinput(args)
+                return
+        direction = direction.upper()
+        if direction.upper() not in ['X', 'Y']:
+            self.badinput("direction should be either 'X' or 'Y'")
+            return
+        try:
+            delta = float(delta)
+        except ValueError as err:
+            self.badinput(err.args[0])
+            return
+        if direction == 'X':
+            self.x_pos += delta
+        else:
+            self.y_pos += delta
+        self.point()
