@@ -7,6 +7,26 @@ from . import SingleDevice, _dispatch
 from .. import MeasuredData, DataCollection
 
 
+def sort_channels(collection, channels):
+    """Find the order of channels in a collection of channels.
+
+    Returns a list with the indexes of the elements of `channels` in
+    `collection`.
+
+    Parameters:
+    collection :  Iterable
+        A collection of channels from a device.
+    channels : list
+        The channels whose indexes in `collection` will be returned.
+
+    """
+    collection = list(collection)
+    idx = []
+    for ch in collection:
+        idx.append(collection.index(ch))
+    return idx
+
+
 class InteractiveExperiment(cmd.Cmd):
     """Interactive prompts for a task with single device."""
     intro = "Try '?' or 'help' for help."
