@@ -634,3 +634,8 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         self.data_in.timestamp = \
             f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
         self.save(file_name, overwrite=True)
+
+    @_dispatch(SingleDevice.close)
+    def close(self):
+        self.laser_task.close()
+        self.mirrors_task.close()
