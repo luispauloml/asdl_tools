@@ -639,3 +639,16 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     def close(self):
         self.laser_task.close()
         self.mirrors_task.close()
+
+    def purge(self):
+        """Delete data stored in current experiment.
+
+        Delete all previous read data and re-store global variables.
+
+        """
+        self.data_in = DataCollection()
+        self.store_variables('global')
+
+    def do_purge(self, _):
+        """Delete stored data."""
+        self.purge()
