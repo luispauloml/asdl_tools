@@ -348,7 +348,7 @@ defined in current experiment")
             samps_per_chan=nsamps,
         )
         if write:
-            self.laser_task.write(self.data_out, auto_start=False)
+            self.laser_task.write(list(self.data_out), auto_start=False)
             self.laser_task.synchronize()
 
     def set_sampl_rate(self, value):
