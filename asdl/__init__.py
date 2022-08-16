@@ -48,7 +48,20 @@ class DataCollection(collections.UserList, MeasuredData):
     """A collection of measured data.
 
     Parameters:
-    list :
+    initlist : list
         A list data objects to be saved.
     """
-    pass
+    # `DataCollection` is a subclass of `MeasuredData` so that it can
+    # inherit the `save` and `load` methods.  Each entry in
+    # `DataCollection` is expected to -- but not required to -- be of
+    # type `MeasuredData`.  This looks like a cyclic dependency, but
+    # since the only methods defined in `MeasuredData` are `save` and
+    # `load`, it (probably) will not be a problem.
+    @property
+    def last(self):
+        """the last object in the list"""
+        return self[-1]
+
+    @last.setter
+    def last(self, value):
+        self[-1] = value
