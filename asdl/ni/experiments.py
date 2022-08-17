@@ -508,7 +508,7 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         else:
             nsamples = int(nsamples)
         data = self.laser_task.read_task.read(nsamples)
-        data = self.postprocess(data)
+        data = self.postprocess(np.array(data))
         if store:
             self.data_in.append(MeasuredData())
             self.store_variables('local')
@@ -528,8 +528,8 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         f(x) = x.
 
         Parameters:
-        data : list
-            The list floats returned by NI-DAQmx.
+        data : numpy.ndarray
+            The list of `float` returned by NI-DAQmx converted to `numpy.darray`.
 
         """
         return data
