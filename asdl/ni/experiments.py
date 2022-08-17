@@ -547,6 +547,22 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     def save(self, *args, **kwargs):
         self.data_in.save(*args, **kwargs)
 
+    def move(self, x=0, y=0):
+        """Move laser point by an amount of (x, y).
+
+        Parameters:
+        x : float, optional
+            The amount to move the laser point in the X direction.
+            Default is 0.
+        y : float, optional
+            The amount to move the laser point in the Y direction.
+            Defualt is 0.
+
+        """
+        self.x_pos += float(x)
+        self.y_pos += float(y)
+        self.point()
+
     def do_move(self, args):
         """Move point: move {X | Y}  DELTA
         Move point in direction X or Y by DELTA cm."""
@@ -569,10 +585,9 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
             self.badinput(err.args[0])
             return
         if direction == 'X':
-            self.x_pos += delta
+            self.move(x=delta)
         else:
-            self.y_pos += delta
-        self.point()
+            self.move(y=delta)
 
     def offset(self, x=None, y=None):
         """Set offset for point position and set position to (0, 0).
