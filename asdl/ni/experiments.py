@@ -477,6 +477,15 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
 
+        other_channels = list(self.laser_task.read_task.ai_channels) + \
+            list(self.laser_task.write_task.ao_channels)
+        if self.mirrors_device:
+            other_channels += list(self.mirrors_task.write_task.ao_channels)
+        other_channels = [repr(ch) for ch in other_channels
+                          if ch not in [self.mirror_x_chan, self.mirror_y_chan,
+                                        self.read_chan, self.excit_chan]]
+        self.print_topics('\nOther channels:',  other_channels, None, 80)
+
     def do_setup(self, args):
         """Run setup procedure: setup [write]
         If `write` is passed, prepare for writing to the device."""
