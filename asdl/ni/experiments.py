@@ -685,3 +685,34 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
     def do_purge(self, _):
         """Delete stored data."""
         self.purge()
+
+    def discard(self, n=1):
+        """Discard last N measurements.
+
+        Pop elements from the list of saved measurements.  If list is
+        empty, it does nothing.
+
+        Parameters:
+        n : int, optional
+            The number of elements to be discarded from the data acquired.
+
+        """
+        for i in range(n):
+            try:
+                self.data_in.pop()
+            except IndexError:
+                break
+
+    def do_discard(self, args):
+        """Discard N measurements: discard [N]
+        If N is omitted, discard the last measurement."""
+        try:
+            n, *rest = args.split()
+        except ValueError:
+            n = 1
+        try:
+            n = int(n)
+        except ValueError as err:
+            self.badinput(err.args[0])
+            return
+        self.discard(n)
