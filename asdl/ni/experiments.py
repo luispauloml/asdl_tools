@@ -174,7 +174,7 @@ class LaserExperiment(InteractiveExperiment):
     def __init__(
             self,
             laser_device,
-            mirrors_device,
+            mirrors_device=None,
             mirror_x_chan=None,
             mirror_y_chan=None,
             excit_chan=None,
@@ -188,27 +188,32 @@ class LaserExperiment(InteractiveExperiment):
         InteractiveExperiment.__init__(self)
 
         self.laser_task = SingleDevice(laser_device)
-        self.mirrors_task = SingleDevice(mirrors_device)
-        self._devices = (self.laser_task.device, self.mirrors_task.device)
+        if mirrors_device is not None:
+            self.mirrors_task = SingleDevice(mirrors_device)
+            self._devices = (self.laser_task.device, self.mirrors_task.device)
+        else:
+            self.mirrors_task = None
+            self._devices = (self.laser_task.device, None)
 
         self._min_max = (float(min_out_volt), float(max_out_volt))
         self.point_offset = (0, 0)
 
-        if mirror_x_chan is None:
-            mirror_x_chan = self.mirror_x_chan
-        if mirror_y_chan is None:
-            mirror_y_chan = self.mirror_y_chan
-        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
-            if mirror_chan is not None:
-                ch = self.mirrors_task.add_ao_voltage_chan(
-                    mirror_chan,
-                    min_val=self._min_max[0],
-                    max_val=self._min_max[1]
-                )
-                if i == 0:
-                    self.mirror_x_chan = ch
-                elif i == 1:
-                    self.mirror_y_chan = ch
+        if self.mirrors_device is not None:
+            if mirror_x_chan is None:
+                mirror_x_chan = self.mirror_x_chan
+            if mirror_y_chan is None:
+                mirror_y_chan = self.mirror_y_chan
+            for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
+                if mirror_chan is not None:
+                    ch = self.mirrors_task.add_ao_voltage_chan(
+                        mirror_chan,
+                        min_val=self._min_max[0],
+                        max_val=self._min_max[1]
+                    )
+                    if i == 0:
+                        self.mirror_x_chan = ch
+                    elif i == 1:
+                        self.mirror_y_chan = ch
 
         read_chan = [ch
                      for ch in [read_chan, self.read_chan]
@@ -250,7 +255,10 @@ class LaserExperiment(InteractiveExperiment):
 
     def __del__(self):
         self.laser_task.__del__()
-        self.mirrors_task.__del__()
+        try:
+            self.mirrors_task.__del__()
+        except AttributeError:
+            pass
 
     @property
     def laser_device(self):
@@ -449,9 +457,16 @@ defined in current experiment")
             self.stdout.write(f'{self.ruler * 8}\n')
         self.stdout.write(f"""Device\t\tName\t\tType
 ------\t\t----\t\t----
-Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}
-Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
-\n""")
+Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
+        if self.mirrors_device:
+            self.stdout.write('Mirrors\t\t{0}\t\t{1}\n\n'
+                              .format(
+                                  self.mirrors_device.name,
+                                  self.mirrors_device.product_type
+                                  )
+                              )
+        else:
+            self.stdout.write('Mirrors\t\tNone\t\tNone\n\n')
         self.stdout.write('Channels:\n')
         if self.ruler:
                 self.stdout.write(f'{self.ruler * 9}\n')
@@ -653,7 +668,10 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     @_dispatch(SingleDevice.close)
     def close(self):
         self.laser_task.close()
-        self.mirrors_task.close()
+        try:
+            self.mirrors_task.close()
+        except AttributeError:
+            pass
 
     def purge(self):
         """Delete data stored in current experiment.
