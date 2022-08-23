@@ -174,7 +174,7 @@ class LaserExperiment(InteractiveExperiment):
     def __init__(
             self,
             laser_device,
-            mirrors_device,
+            mirrors_device=None,
             mirror_x_chan=None,
             mirror_y_chan=None,
             excit_chan=None,
@@ -188,27 +188,32 @@ class LaserExperiment(InteractiveExperiment):
         InteractiveExperiment.__init__(self)
 
         self.laser_task = SingleDevice(laser_device)
-        self.mirrors_task = SingleDevice(mirrors_device)
-        self._devices = (self.laser_task.device, self.mirrors_task.device)
+        if mirrors_device is not None:
+            self.mirrors_task = SingleDevice(mirrors_device)
+            self._devices = (self.laser_task.device, self.mirrors_task.device)
+        else:
+            self.mirrors_task = None
+            self._devices = (self.laser_task.device, None)
 
         self._min_max = (float(min_out_volt), float(max_out_volt))
         self.point_offset = (0, 0)
 
-        if mirror_x_chan is None:
-            mirror_x_chan = self.mirror_x_chan
-        if mirror_y_chan is None:
-            mirror_y_chan = self.mirror_y_chan
-        for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
-            if mirror_chan is not None:
-                ch = self.mirrors_task.add_ao_voltage_chan(
-                    mirror_chan,
-                    min_val=self._min_max[0],
-                    max_val=self._min_max[1]
-                )
-                if i == 0:
-                    self.mirror_x_chan = ch
-                elif i == 1:
-                    self.mirror_y_chan = ch
+        if self.mirrors_device is not None:
+            if mirror_x_chan is None:
+                mirror_x_chan = self.mirror_x_chan
+            if mirror_y_chan is None:
+                mirror_y_chan = self.mirror_y_chan
+            for i, mirror_chan in enumerate([mirror_x_chan, mirror_y_chan]):
+                if mirror_chan is not None:
+                    ch = self.mirrors_task.add_ao_voltage_chan(
+                        mirror_chan,
+                        min_val=self._min_max[0],
+                        max_val=self._min_max[1]
+                    )
+                    if i == 0:
+                        self.mirror_x_chan = ch
+                    elif i == 1:
+                        self.mirror_y_chan = ch
 
         read_chan = [ch
                      for ch in [read_chan, self.read_chan]
@@ -250,17 +255,20 @@ class LaserExperiment(InteractiveExperiment):
 
     def __del__(self):
         self.laser_task.__del__()
-        self.mirrors_task.__del__()
+        try:
+            self.mirrors_task.__del__()
+        except AttributeError:
+            pass
 
     @property
     def laser_device(self):
         """the device used to read from laser and write to vibration source"""
-        return self.laser_task.device
+        return self._devices[0]
 
     @property
     def mirrors_device(self):
         """the device used to control X and Y mirros"""
-        return self.mirrors_task.device
+        return self._devices[1]
 
     def store_variables(self, local_or_global, index=-1):
         """Store or update variables to be saved.
@@ -449,9 +457,16 @@ defined in current experiment")
             self.stdout.write(f'{self.ruler * 8}\n')
         self.stdout.write(f"""Device\t\tName\t\tType
 ------\t\t----\t\t----
-Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}
-Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
-\n""")
+Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
+        if self.mirrors_device:
+            self.stdout.write('Mirrors\t\t{0}\t\t{1}\n\n'
+                              .format(
+                                  self.mirrors_device.name,
+                                  self.mirrors_device.product_type
+                                  )
+                              )
+        else:
+            self.stdout.write('Mirrors\t\tNone\t\tNone\n\n')
         self.stdout.write('Channels:\n')
         if self.ruler:
                 self.stdout.write(f'{self.ruler * 9}\n')
@@ -461,6 +476,15 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
                  ('Reading', self.read_chan)]
         for name, ch in pairs:
             self.stdout.write('{0}:\t{1}\n'.format(name, repr(ch)))
+
+        other_channels = list(self.laser_task.read_task.ai_channels) + \
+            list(self.laser_task.write_task.ao_channels)
+        if self.mirrors_device:
+            other_channels += list(self.mirrors_task.write_task.ao_channels)
+        other_channels = [repr(ch) for ch in other_channels
+                          if ch not in [self.mirror_x_chan, self.mirror_y_chan,
+                                        self.read_chan, self.excit_chan]]
+        self.print_topics('\nOther channels:',  other_channels, None, 80)
 
     def do_setup(self, args):
         """Run setup procedure: setup [write]
@@ -508,7 +532,7 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         else:
             nsamples = int(nsamples)
         data = self.laser_task.read_task.read(nsamples)
-        data = self.postprocess(data)
+        data = self.postprocess(np.array(data))
         if store:
             self.data_in.append(MeasuredData())
             self.store_variables('local')
@@ -528,8 +552,8 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
         f(x) = x.
 
         Parameters:
-        data : list
-            The list floats returned by NI-DAQmx.
+        data : numpy.ndarray
+            The list of `float` returned by NI-DAQmx converted to `numpy.darray`.
 
         """
         return data
@@ -546,6 +570,22 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     @_dispatch(DataCollection.save, 'DataCollection.save')
     def save(self, *args, **kwargs):
         self.data_in.save(*args, **kwargs)
+
+    def move(self, x=0, y=0):
+        """Move laser point by an amount of (x, y).
+
+        Parameters:
+        x : float, optional
+            The amount to move the laser point in the X direction.
+            Default is 0.
+        y : float, optional
+            The amount to move the laser point in the Y direction.
+            Defualt is 0.
+
+        """
+        self.x_pos += float(x)
+        self.y_pos += float(y)
+        self.point()
 
     def do_move(self, args):
         """Move point: move {X | Y}  DELTA
@@ -569,10 +609,9 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
             self.badinput(err.args[0])
             return
         if direction == 'X':
-            self.x_pos += delta
+            self.move(x=delta)
         else:
-            self.y_pos += delta
-        self.point()
+            self.move(y=delta)
 
     def offset(self, x=None, y=None):
         """Set offset for point position and set position to (0, 0).
@@ -638,7 +677,10 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     @_dispatch(SingleDevice.close)
     def close(self):
         self.laser_task.close()
-        self.mirrors_task.close()
+        try:
+            self.mirrors_task.close()
+        except AttributeError:
+            pass
 
     def purge(self):
         """Delete data stored in current experiment.
@@ -652,3 +694,34 @@ Mirrors\t\t{self.mirrors_device.name}\t\t{self.mirrors_device.product_type}
     def do_purge(self, _):
         """Delete stored data."""
         self.purge()
+
+    def discard(self, n=1):
+        """Discard last N measurements.
+
+        Pop elements from the list of saved measurements.  If list is
+        empty, it does nothing.
+
+        Parameters:
+        n : int, optional
+            The number of elements to be discarded from the data acquired.
+
+        """
+        for i in range(n):
+            try:
+                self.data_in.pop()
+            except IndexError:
+                break
+
+    def do_discard(self, args):
+        """Discard N measurements: discard [N]
+        If N is omitted, discard the last measurement."""
+        try:
+            n, *rest = args.split()
+        except ValueError:
+            n = 1
+        try:
+            n = int(n)
+        except ValueError as err:
+            self.badinput(err.args[0])
+            return
+        self.discard(n)
