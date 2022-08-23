@@ -11,6 +11,9 @@ import pickle
 import collections
 
 
+__all__ = ['MeasuredData', 'DataCollection']
+
+
 class MeasuredData(object):
     """Object to store, save and load data."""
 
