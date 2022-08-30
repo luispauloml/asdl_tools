@@ -251,7 +251,10 @@ class LaserExperiment(InteractiveExperiment):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.laser_task.close()
-        self.mirrors_task.close()
+        try:
+            self.mirrors_task.close()
+        except AttributeError:
+            pass
 
     def __del__(self):
         self.laser_task.__del__()
