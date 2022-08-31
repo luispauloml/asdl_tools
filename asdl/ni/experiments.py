@@ -345,8 +345,17 @@ class LaserExperiment(InteractiveExperiment):
         self.volt_deg_scale = float(volt_deg_scale)
         self.x_pos = 0.0
         self.y_pos = 0.0
-        self.data_in = DataCollection()
+        self._data = {'in': DataCollection()}
         self.store_variables('global')
+
+    @property
+    def data_in(self):
+        """the data read during the experiment"""
+        return self._data['in']
+
+    @data_in.setter
+    def data_in(self, value):
+        self._data['in'] = value
 
     def __enter__(self):
         return self
