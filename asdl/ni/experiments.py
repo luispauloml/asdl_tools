@@ -374,7 +374,7 @@ defined in current experiment")
     def set_distance(self, value):
         """the distance of the surface (cm)"""
         value = self.parsearg(value, float)
-        if not value:
+        if value is None:
             return
         else:
             self.distance = value
@@ -382,7 +382,7 @@ defined in current experiment")
     def set_volt_deg_scale(self, value):
         """the scaling factor (V/deg)"""
         value = self.parsearg(value, float)
-        if not value:
+        if value is None:
             return
         else:
             self.volt_deg_scale = value
