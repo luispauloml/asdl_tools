@@ -347,8 +347,7 @@ class LaserExperiment(InteractiveExperiment):
         self.volt_deg_scale = float(volt_deg_scale)
         self.x_pos = 0.0
         self.y_pos = 0.0
-        self._data = {'in': DataCollection()}
-        self.data_out = None
+        self._data = {'in': DataCollection(), 'out': None}
         if data_out is not None:
             self.data_out = np.squeeze(np.array(data_out))
             if len(self.data_out > 1):
@@ -363,6 +362,15 @@ class LaserExperiment(InteractiveExperiment):
     @data_in.setter
     def data_in(self, value):
         self._data['in'] = value
+
+    @property
+    def data_out(self):
+        """the data written to the output"""
+        return self._data['out']
+
+    @data_out.setter
+    def data_out(self, value):
+        self._data['out'] = value
 
     def __enter__(self):
         return self
