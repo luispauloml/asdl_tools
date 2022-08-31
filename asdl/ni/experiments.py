@@ -572,6 +572,7 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
 
     @_dispatch(DataCollection.save, 'DataCollection.save')
     def save(self, *args, **kwargs):
+        self.store_variables('global')
         self.data_in.save(*args, **kwargs)
 
     def move(self, x=0, y=0):
