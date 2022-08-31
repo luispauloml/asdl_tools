@@ -202,6 +202,68 @@ class InteractiveExperiment(cmd.Cmd):
 
 
 class LaserExperiment(InteractiveExperiment):
+    """A class for interactive experiments using a laser.
+
+    This class implements one of the most basic experiments for a
+    setup if a laser and two mirrors: "point and measure", i.e. the
+    user can set the position of the laser point and start and read
+    data.
+
+    It also provides two ways of storing other values besides the data
+    read from the device: global and local variables.  Local variables
+    are attributes whose names are listed as `str` in the class
+    attribute `local_variables`.  Every time the command or method
+    `read` is called, the values of the local variables as stored
+    together with the data from that run as attributes in an instance
+    of `.MeasuredData`.  As for global variables, these are attributes
+    listed in the `global_variables` class attribute, and their values
+    are stored in the collection of runs as attributes to an instance
+    of `.DataCollection` which -- as the name suggests -- collects
+    data from all the runs.  Global variables are stored when
+    an instance of this class is saved with `save` command or method.
+
+    Parameters:
+    laser_device : str
+        The name of the NI device to be used to read data from the
+        laser controler and generate excitation signal.  It should
+        be a name as presented in NI MAX, e.g. 'Dev1'.
+    mirrors_device : str, optional
+        The name of the NI device to be used to control at most
+        two mirrors.  If None, there will be no output signal to
+        control mirrors.  It should be a name as presented in NI
+        MAX, e.g. 'Dev1'.
+    mirror_x_chan : int or str, optional
+        The channel to control the mirror that moves the laser
+        point in the X direction.  If a `str` is provided, it
+        should be a name as presented in NI MAX, e.g. 'Dev1/ao0'.
+    mirror_y_chan : int or str, optional
+        The channel to control the mirror that moves the laser
+        point in the Y direction.  If a `str` is provided, it
+        should be a name as presented in NI MAX, e.g. 'Dev1/ao0'.
+    excit_chan : int or str, optional
+        The channel to generate excitation signal.  If a `str` is
+        provided, it should be a name as presented in NI MAX,
+        e.g. 'Dev1/ao0'.
+    read_chan : int or str, optional
+        The channel from which data is read.  If a `str` is provided,
+        it should be a name as presented in NI MAX, e.g. 'Dev1/ai0'.
+    min_out_volt : float, optional
+        The minimum allowed output voltage for the device, in V.
+        Default is -10.
+    max_out_volt : float, optional
+        The maximum allowed output voltage for the device, in V.
+        Default is +10.
+    sampl_rate : float, optional
+        The sampling rate for the experiment, in samples/s.
+        Default is 1e3.
+    distance :  float, optional
+        The distance from the laser head to the surface to be
+        measured, in cm.  Default is 100.
+    volt_deg_scale : float, optional
+        The voltage/angle ratio for the mirrors, in V/deg.  Default is
+        0.24.
+
+    """
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
