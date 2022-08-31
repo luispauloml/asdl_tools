@@ -32,7 +32,47 @@ def sort_channels(collection, channels):
 
 
 class InteractiveExperiment(cmd.Cmd):
-    """Interactive prompts for a task with single device."""
+    """Interactive prompts for experiments.
+
+    This class is intended to be inherited instead of instantiated.
+    It provides utility methods for the interactive prompt of
+    experiments, while the logic and method of the experiment should
+    be implemented in the subclass.
+
+    The major advantage of this class is that it provides a way to use
+    class or instance attributes as variables that can be updated from
+    inside the prompt using the `set` command.
+
+    To make an attribute `<varname>` into a variable, a method called
+    `set_<varname>` that takes one single argument of type `str` needs
+    to be defined. The method can be used to parse to convert `value`
+    from `str` to any other type, i.e. a float, and call any necessary
+    hooks. The docstring of this method will me presented as the
+    documentation of `<varname>` when `help variables` is called. For
+    example:
+
+        >>> class Foo(InteractiveExperiment)
+        ...     foo = 'bar'
+        ...     def set_foo(self, value):
+        ...         \"\"\"the value of foo\"\"\"
+        ...         self.foo = value
+        ...
+        >>> Foo().cmdloop()
+        Try '?' or 'help' for help.
+        (Interactive Experiment) set foo baz
+        (Interactive Experiment) help variables
+
+        Variables:
+        ==========
+
+        Name             Value            Documentation
+        ---------------  ---------------  -------------
+        foo              'baz'            the value of foo
+
+    In an experiment, this feature may be useful for updating values
+    such as sampling rate, and instrument sensibility, for example.
+
+    """
     intro = "Try '?' or 'help' for help."
     prompt = '(Interactive Experiment) '
 
