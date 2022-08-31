@@ -262,6 +262,8 @@ class LaserExperiment(InteractiveExperiment):
     volt_deg_scale : float, optional
         The voltage/angle ratio for the mirrors, in V/deg.  Default is
         0.24.
+    data_out : list or 1D numpy.ndarray, optional
+        The data to be used as excitation signal.
 
     """
     prompt = '(Laser Experiment) '
@@ -269,7 +271,6 @@ class LaserExperiment(InteractiveExperiment):
     mirror_y_chan = None
     excit_chan = None
     read_chan = None
-    data_out = None
     global_variables = ['data_out']
     local_variables = ['y_pos', 'x_pos', 'sampl_rate']
 
@@ -286,6 +287,7 @@ class LaserExperiment(InteractiveExperiment):
             sampl_rate=1e3,
             distance=100,
             volt_deg_scale=0.24,
+            data_out = None,
     ):
         InteractiveExperiment.__init__(self)
 
@@ -346,6 +348,11 @@ class LaserExperiment(InteractiveExperiment):
         self.x_pos = 0.0
         self.y_pos = 0.0
         self._data = {'in': DataCollection()}
+        self.data_out = None
+        if data_out is not None:
+            self.data_out = np.squeeze(np.array(data_out))
+            if len(self.data_out > 1):
+                raise ValueError("'data_out' should result in a 1D numpy.ndarray")
         self.store_variables('global')
 
     @property
