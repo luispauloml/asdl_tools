@@ -256,7 +256,7 @@ class LaserExperiment(InteractiveExperiment):
     sampl_rate : float, optional
         The sampling rate for the experiment, in samples/s.
         Default is 1e3.
-    distance :  float, optional
+    distance : float, optional
         The distance from the laser head to the surface to be
         measured, in cm.  Default is 100.
     volt_deg_scale : float, optional
@@ -356,7 +356,7 @@ class LaserExperiment(InteractiveExperiment):
 
     @property
     def data_in(self):
-        """the data read during the experiment"""
+        """the collection of data read during the experiment"""
         return self._data['in']
 
     @data_in.setter
@@ -365,7 +365,7 @@ class LaserExperiment(InteractiveExperiment):
 
     @property
     def data_out(self):
-        """the data written to the output"""
+        """the excitation signal"""
         return self._data['out']
 
     @data_out.setter
