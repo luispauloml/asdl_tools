@@ -32,7 +32,47 @@ def sort_channels(collection, channels):
 
 
 class InteractiveExperiment(cmd.Cmd):
-    """Interactive prompts for a task with single device."""
+    """Interactive prompts for experiments.
+
+    This class is intended to be inherited instead of instantiated.
+    It provides utility methods for the interactive prompt of
+    experiments, while the logic and method of the experiment should
+    be implemented in the subclass.
+
+    The major advantage of this class is that it provides a way to use
+    class or instance attributes as variables that can be updated from
+    inside the prompt using the `set` command.
+
+    To make an attribute `<varname>` into a variable, a method called
+    `set_<varname>` that takes one single argument of type `str` needs
+    to be defined. The method can be used to parse to convert `value`
+    from `str` to any other type, i.e. a float, and call any necessary
+    hooks. The docstring of this method will me presented as the
+    documentation of `<varname>` when `help variables` is called. For
+    example:
+
+        >>> class Foo(InteractiveExperiment)
+        ...     foo = 'bar'
+        ...     def set_foo(self, value):
+        ...         \"\"\"the value of foo\"\"\"
+        ...         self.foo = value
+        ...
+        >>> Foo().cmdloop()
+        Try '?' or 'help' for help.
+        (Interactive Experiment) set foo baz
+        (Interactive Experiment) help variables
+
+        Variables:
+        ==========
+
+        Name             Value            Documentation
+        ---------------  ---------------  -------------
+        foo              'baz'            the value of foo
+
+    In an experiment, this feature may be useful for updating values
+    such as sampling rate, and instrument sensibility, for example.
+
+    """
     intro = "Try '?' or 'help' for help."
     prompt = '(Interactive Experiment) '
 
@@ -162,12 +202,75 @@ class InteractiveExperiment(cmd.Cmd):
 
 
 class LaserExperiment(InteractiveExperiment):
+    """A class for interactive experiments using a laser.
+
+    This class implements one of the most basic experiments for a
+    setup if a laser and two mirrors: "point and measure", i.e. the
+    user can set the position of the laser point and start and read
+    data.
+
+    It also provides two ways of storing other values besides the data
+    read from the device: global and local variables.  Local variables
+    are attributes whose names are listed as `str` in the class
+    attribute `local_variables`.  Every time the command or method
+    `read` is called, the values of the local variables as stored
+    together with the data from that run as attributes in an instance
+    of `.MeasuredData`.  As for global variables, these are attributes
+    listed in the `global_variables` class attribute, and their values
+    are stored in the collection of runs as attributes to an instance
+    of `.DataCollection` which -- as the name suggests -- collects
+    data from all the runs.  Global variables are stored when
+    an instance of this class is saved with `save` command or method.
+
+    Parameters:
+    laser_device : str
+        The name of the NI device to be used to read data from the
+        laser controler and generate excitation signal.  It should
+        be a name as presented in NI MAX, e.g. 'Dev1'.
+    mirrors_device : str, optional
+        The name of the NI device to be used to control at most
+        two mirrors.  If None, there will be no output signal to
+        control mirrors.  It should be a name as presented in NI
+        MAX, e.g. 'Dev1'.
+    mirror_x_chan : int or str, optional
+        The channel to control the mirror that moves the laser
+        point in the X direction.  If a `str` is provided, it
+        should be a name as presented in NI MAX, e.g. 'Dev1/ao0'.
+    mirror_y_chan : int or str, optional
+        The channel to control the mirror that moves the laser
+        point in the Y direction.  If a `str` is provided, it
+        should be a name as presented in NI MAX, e.g. 'Dev1/ao0'.
+    excit_chan : int or str, optional
+        The channel to generate excitation signal.  If a `str` is
+        provided, it should be a name as presented in NI MAX,
+        e.g. 'Dev1/ao0'.
+    read_chan : int or str, optional
+        The channel from which data is read.  If a `str` is provided,
+        it should be a name as presented in NI MAX, e.g. 'Dev1/ai0'.
+    min_out_volt : float, optional
+        The minimum allowed output voltage for the device, in V.
+        Default is -10.
+    max_out_volt : float, optional
+        The maximum allowed output voltage for the device, in V.
+        Default is +10.
+    sampl_rate : float, optional
+        The sampling rate for the experiment, in samples/s.
+        Default is 1e3.
+    distance : float, optional
+        The distance from the laser head to the surface to be
+        measured, in cm.  Default is 100.
+    volt_deg_scale : float, optional
+        The voltage/angle ratio for the mirrors, in V/deg.  Default is
+        0.24.
+    data_out : list or 1D numpy.ndarray, optional
+        The data to be used as excitation signal.
+
+    """
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
     excit_chan = None
     read_chan = None
-    data_out = None
     global_variables = ['data_out']
     local_variables = ['y_pos', 'x_pos', 'sampl_rate']
 
@@ -184,6 +287,7 @@ class LaserExperiment(InteractiveExperiment):
             sampl_rate=1e3,
             distance=100,
             volt_deg_scale=0.24,
+            data_out = None,
     ):
         InteractiveExperiment.__init__(self)
 
@@ -243,15 +347,40 @@ class LaserExperiment(InteractiveExperiment):
         self.volt_deg_scale = float(volt_deg_scale)
         self.x_pos = 0.0
         self.y_pos = 0.0
-        self.data_in = DataCollection()
+        self._data = {'in': DataCollection(), 'out': None}
+        if data_out is not None:
+            self.data_out = np.squeeze(np.array(data_out))
+            if len(self.data_out > 1):
+                raise ValueError("'data_out' should result in a 1D numpy.ndarray")
         self.store_variables('global')
+
+    @property
+    def data_in(self):
+        """the collection of data read during the experiment"""
+        return self._data['in']
+
+    @data_in.setter
+    def data_in(self, value):
+        self._data['in'] = value
+
+    @property
+    def data_out(self):
+        """the excitation signal"""
+        return self._data['out']
+
+    @data_out.setter
+    def data_out(self, value):
+        self._data['out'] = value
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.laser_task.close()
-        self.mirrors_task.close()
+        try:
+            self.mirrors_task.close()
+        except AttributeError:
+            pass
 
     def __del__(self):
         self.laser_task.__del__()
@@ -371,7 +500,7 @@ defined in current experiment")
     def set_distance(self, value):
         """the distance of the surface (cm)"""
         value = self.parsearg(value, float)
-        if not value:
+        if value is None:
             return
         else:
             self.distance = value
@@ -379,7 +508,7 @@ defined in current experiment")
     def set_volt_deg_scale(self, value):
         """the scaling factor (V/deg)"""
         value = self.parsearg(value, float)
-        if not value:
+        if value is None:
             return
         else:
             self.volt_deg_scale = value
@@ -569,6 +698,7 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
 
     @_dispatch(DataCollection.save, 'DataCollection.save')
     def save(self, *args, **kwargs):
+        self.store_variables('global')
         self.data_in.save(*args, **kwargs)
 
     def move(self, x=0, y=0):
