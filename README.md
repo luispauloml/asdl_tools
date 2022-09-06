@@ -75,22 +75,26 @@ want to see all the version, look for Git tags:
 
 ## Usage
 
-After installing, you can import it by ``import asdl``.  Be sure to
-use Python's ``help`` function to find information about everything in
-this package.  Here are important points about this package:
+You can check the [tutorial](./TUTORIAL.ipynb) for a simple guide on
+how to start using this package.  You can also see other examples
+[here](./examples/).
+
+After installing, you can import it by doing ``import asdl``.  Be sure
+to use Python's ``help`` function to find more information about each
+function and method in this package.  Here are important points about
+this package:
 
 - The class ``MeasuredData``:
 
-  The most basic functionality of the package, which provides
-  convenient way for saving a loading data that can be used in
-  different Python sessions.
+  The most basic functionality of the package, which provides a
+  convenient way for saving and loading data.
   
 - The ``ni`` sub-package:
 
-  Provides a way for dealing with reading (input) and output (writing)
+  Provides a way for dealing with read (input) and write (output)
   tasks from ``nidaqmx`` package.  This sub-package exists to simplify
-  the ``nidaqmx`` package provided by National Instruments, that
-  provides too much low-level functionality, which can be very
-  confusing when using for the first time.  See ``Task`` and
-  ``SingleDevice`` classes.
-
+  the [``nidaqmx`` package provided by National
+  Instruments](https://github.com/ni/nidaqmx-python), that provides
+  too much low-level functionality, which can be very confusing when
+  using for the first time.  For more information, see the help for
+  ``asdl.ni.Task`` and ``asdl.ni.SingleDevice`` classes.
