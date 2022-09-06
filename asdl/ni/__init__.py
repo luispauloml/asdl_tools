@@ -252,6 +252,14 @@ class SingleDevice(Task):
             self._device = devices[0]
         Task.__init__(self)
 
+    def __del__(self):
+        try:
+            Task.__del__(self)
+        except AttributeError:
+            # The attributes `read_task` and `write_task` do not
+            # exist and there is nothing to be deleted.
+            pass
+
     @property
     def device(self):
         """The device using in the tasks."""
