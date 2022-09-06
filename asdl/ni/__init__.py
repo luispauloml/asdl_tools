@@ -241,8 +241,6 @@ class SingleDevice(Task):
 
     """
     def __init__(self, device_name):
-        Task.__init__(self)
-
         devices = [device
                    for device in nidaqmx.system.System.local().devices
                    if device.name == device_name]
@@ -252,6 +250,7 @@ class SingleDevice(Task):
             raise SystemError(f"there is more then one device '{device_name}")
         else:
             self._device = devices[0]
+        Task.__init__(self)
 
     @property
     def device(self):
