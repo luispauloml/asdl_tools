@@ -24,7 +24,7 @@ class MeasuredData(object):
             obj = pickle.load(file_)
         return obj
 
-    def save(self, file_name, overwrite=True):
+    def save(self, file_name, overwrite=True, protocol=4):
         """Save data from current object to a binary file.
 
         Parameters:
@@ -32,7 +32,10 @@ class MeasuredData(object):
             The name of the file where the data will be stored.
         overwrite : bool
             Flag to overwrite an already existing file.
-
+        protocol :  int
+            The protocol to be used by the pickler.  Default value is
+            4, which is compatible for Python versions 3.4 onwards.
+            See `pickle` module for more information
         """
 
         try:
@@ -44,7 +47,7 @@ class MeasuredData(object):
                 raise FileExistsError(f"file '{file_name}' already exists")
 
         with open(file_name, 'wb') as file_:
-            pickle.dump(self, file_, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, file_, protocol)
 
 
 class DataCollection(collections.UserList, MeasuredData):
