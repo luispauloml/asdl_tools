@@ -9,6 +9,7 @@ Systems Laboratory.
 import os
 import pickle
 import collections
+import scipy.io
 
 
 __all__ = ['MeasuredData', 'DataCollection']
@@ -29,13 +30,15 @@ class MeasuredData(object):
 
         Parameters:
         file_name : str
-            The name of the file where the data will be stored.
+            The name of the file where the data will be stored.  If
+            `file_name` ends with ".mat", save a MATLAB binary file.
         overwrite : bool
             Flag to overwrite an already existing file.
         protocol :  int
             The protocol to be used by the pickler.  Default value is
             4, which is compatible for Python versions 3.4 onwards.
             See `pickle` module for more information
+
         """
 
         try:
@@ -46,8 +49,13 @@ class MeasuredData(object):
             if not overwrite:
                 raise FileExistsError(f"file '{file_name}' already exists")
 
-        with open(file_name, 'wb') as file_:
-            pickle.dump(self, file_, protocol)
+        if file_name[-4:] == '.mat':
+            scipy.io.savemat(file_name,
+                             self.__dict__,
+                             appendmat=False)
+        else:
+            with open(file_name, 'wb') as file_:
+                pickle.dump(self, file_, protocol)
 
 
 class DataCollection(collections.UserList, MeasuredData):
