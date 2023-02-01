@@ -10,6 +10,7 @@ import os
 import pickle
 import collections
 import scipy.io
+import time
 
 
 __all__ = ['MeasuredData', 'DataCollection']
@@ -25,7 +26,7 @@ class MeasuredData(object):
             obj = pickle.load(file_)
         return obj
 
-    def save(self, file_name, overwrite=True, protocol=4):
+    def save(self, file_name, overwrite=True, timestamp=True, protocol=4):
         """Save data from current object to a binary file.
 
         Parameters:
@@ -34,6 +35,11 @@ class MeasuredData(object):
             `file_name` ends with ".mat", save a MATLAB binary file.
         overwrite : bool
             Flag to overwrite an already existing file.
+        timestamp : bool
+            If True, add a time stamp to the object before saving it,
+            and if a time stamp already exists, overwrite it.  If
+            False, do not create a time stamp, and if it already
+            exists, do not modify it.  Default is True.
         protocol :  int
             The protocol to be used by the pickler.  Default value is
             4, which is compatible for Python versions 3.4 onwards.
@@ -48,6 +54,9 @@ class MeasuredData(object):
         else:
             if not overwrite:
                 raise FileExistsError(f"file '{file_name}' already exists")
+        if timestamp:
+            self.timestamp = \
+                f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
 
         if file_name[-4:] == '.mat':
             scipy.io.savemat(file_name,

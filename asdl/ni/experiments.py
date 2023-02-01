@@ -2,7 +2,6 @@ import cmd
 import nidaqmx
 import numpy as np
 import traceback
-import time
 import sys
 from . import SingleDevice, _dispatch
 from .. import MeasuredData, DataCollection
@@ -800,8 +799,6 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
     def do_save(self, file_name):
         """Save data from experiment to a file: save FILENAME
         Note: this command overwrites existing files."""
-        self.data_in.timestamp = \
-            f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
         self.save(file_name, overwrite=True)
 
     @_dispatch(SingleDevice.close)
