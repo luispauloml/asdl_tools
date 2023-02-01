@@ -33,14 +33,16 @@ class MeasuredData(object):
         file_name : str
             The name of the file where the data will be stored.  If
             `file_name` ends with ".mat", save a MATLAB binary file.
-        overwrite : bool
-            Flag to overwrite an already existing file.
-        timestamp : bool
+        overwrite : bool, optional
+            If True, overwrite an already existing file.  If False and
+            target file already exists, raise `FileExistsError`.
+            Default is True.
+        timestamp : bool, optional
             If True, add a time stamp to the object before saving it,
             and if a time stamp already exists, overwrite it.  If
             False, do not create a time stamp, and if it already
             exists, do not modify it.  Default is True.
-        protocol :  int
+        protocol :  int, optional
             The protocol to be used by the pickler.  Default value is
             4, which is compatible for Python versions 3.4 onwards.
             See `pickle` module for more information
