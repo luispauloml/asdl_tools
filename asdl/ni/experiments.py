@@ -349,7 +349,7 @@ class LaserExperiment(InteractiveExperiment):
         self._data = {'in': DataCollection(), 'out': None}
         if data_out is not None:
             self.data_out = np.squeeze(np.array(data_out))
-            if len(self.data_out > 1):
+            if len(self.data_out.shape) > 1:
                 raise ValueError("'data_out' should result in a 1D numpy.ndarray")
         self.store_variables('global')
 
