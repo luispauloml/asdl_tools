@@ -270,7 +270,9 @@ class LaserExperiment(InteractiveExperiment):
         The data to be used as excitation signal.
 
     """
-    _data = {'in': DataCollection(), 'out': None}
+    _data = MeasuredData()
+    _data.data_in = DataCollection()
+    _data.data_out = None
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
@@ -361,20 +363,20 @@ class LaserExperiment(InteractiveExperiment):
     @property
     def data_in(self):
         """the collection of data read during the experiment"""
-        return self._data['in']
+        return self._data.data_in
 
     @data_in.setter
     def data_in(self, value):
-        self._data['in'] = value
+        self._data.data_in = value
 
     @property
     def data_out(self):
         """the excitation signal"""
-        return self._data['out']
+        return self._data.data_out
 
     @data_out.setter
     def data_out(self, value):
-        self._data['out'] = value
+        self._data.data_out = value
 
     def __enter__(self):
         return self
@@ -821,6 +823,7 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
 
         """
         self.data_in = DataCollection()
+        self.data_out = None
         self.store_variables('global')
 
     def do_purge(self, _):
