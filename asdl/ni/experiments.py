@@ -295,7 +295,7 @@ class LaserExperiment(InteractiveExperiment):
             sampl_rate=1e3,
             distance=100,
             volt_deg_scale=0.24,
-            data_out = None,
+            data_out=None,
     ):
         InteractiveExperiment.__init__(self)
 
