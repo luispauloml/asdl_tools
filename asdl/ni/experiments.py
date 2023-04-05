@@ -227,9 +227,10 @@ class LaserExperiment(InteractiveExperiment):
     an instance of this class is saved with `save` command or method.
 
     Parameters:
-    laser_device : str
+    laser_device : str, optional
         The name of the NI device to be used to read data from the
-        laser controler and generate excitation signal.  It should
+        laser controler and generate excitation signal.  If None,
+        there no device will be set up for reading signals.  It should
         be a name as presented in NI MAX, e.g. 'Dev1'.
     mirrors_device : str, optional
         The name of the NI device to be used to control at most
@@ -283,7 +284,7 @@ class LaserExperiment(InteractiveExperiment):
 
     def __init__(
             self,
-            laser_device,
+            laser_device=None,
             mirrors_device=None,
             mirror_x_chan=None,
             mirror_y_chan=None,
@@ -298,13 +299,12 @@ class LaserExperiment(InteractiveExperiment):
     ):
         InteractiveExperiment.__init__(self)
 
-        self.laser_task = SingleDevice(laser_device)
-        if mirrors_device is not None:
-            self.mirrors_task = SingleDevice(mirrors_device)
-            self._devices = (self.laser_task.device, self.mirrors_task.device)
-        else:
-            self.mirrors_task = None
-            self._devices = (self.laser_task.device, None)
+        self.laser_task = None if laser_device is None else SingleDevice(laser_device)
+        self.mirrors_task = None if mirrors_device is None else SingleDevice(mirrors_device)
+        self._devices = (
+            None if laser_device is None else self.laser_task.device,
+            None if mirrors_device is None else self.mirrors_task.device
+        )
 
         self._min_max = (float(min_out_volt), float(max_out_volt))
         self.point_offset = (0, 0)
@@ -382,14 +382,20 @@ class LaserExperiment(InteractiveExperiment):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.laser_task.close()
+        try:
+            self.laser_task.close()
+        except AttributeError:
+            pass
         try:
             self.mirrors_task.close()
         except AttributeError:
             pass
 
     def __del__(self):
-        self.laser_task.__del__()
+        try:
+            self.laser_task.__del__()
+        except AttributeError:
+            pass
         try:
             self.mirrors_task.__del__()
         except AttributeError:
@@ -473,6 +479,8 @@ defined in current experiment")
             all channels, keeping the laser point in a fixed position,
             and synchronize reading and writing.  Default is False.
         """
+        if self.laser_task is None:
+            raise ValueError('No laser device was set up')
         if not write:
             nsamps = 2
         else:
@@ -677,7 +685,10 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
 
     def do_read(self, _):
         """Read data and store it"""
-        self.read(nsamples='all', store=True)
+        try:
+            self.read(nsamples='all', store=True)
+        except Exception as err:
+            self.stdout.write(f'*** Error: {err.args[0]}\n')
 
     def postprocess(self, data):
         """Post-process the data.
