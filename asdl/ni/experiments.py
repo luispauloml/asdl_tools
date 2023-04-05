@@ -382,24 +382,16 @@ class LaserExperiment(InteractiveExperiment):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
+        if self.laser_task is not None:
             self.laser_task.close()
-        except AttributeError:
-            pass
-        try:
+        if self.mirrors_task is not None:
             self.mirrors_task.close()
-        except AttributeError:
-            pass
 
     def __del__(self):
-        try:
+        if self.laser_task is not None:
             self.laser_task.__del__()
-        except AttributeError:
-            pass
-        try:
+        if self.mirrors_task is not None:
             self.mirrors_task.__del__()
-        except AttributeError:
-            pass
 
     @property
     def laser_device(self):
