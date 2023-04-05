@@ -309,6 +309,9 @@ class LaserExperiment(InteractiveExperiment):
         self._min_max = (float(min_out_volt), float(max_out_volt))
         self.point_offset = (0, 0)
 
+        if (mirror_x_chan is not None or mirror_y_chan is not None) \
+           and mirrors_device is None:
+            raise ValueError('No mirrors device was set up')
         if self.mirrors_device is not None:
             if mirror_x_chan is None:
                 mirror_x_chan = self.mirror_x_chan
@@ -330,6 +333,8 @@ class LaserExperiment(InteractiveExperiment):
                      for ch in [read_chan, self.read_chan]
                      if ch is not None]
         if read_chan != []:
+            if self.laser_task is None:
+                raise ValueError('No laser device was set up')
             ch = self.laser_task.add_ai_voltage_chan(
                 read_chan[0],
                 min_val=self._min_max[0],
@@ -341,6 +346,8 @@ class LaserExperiment(InteractiveExperiment):
                       for ch in [excit_chan, self.excit_chan]
                       if ch is not None]
         if excit_chan != []:
+            if self.laser_task is None:
+                raise ValueError('No laser device was set up')
             ch = self.laser_task.add_ao_voltage_chan(
                 excit_chan[0],
                 min_val=self._min_max[0],
