@@ -270,6 +270,7 @@ class LaserExperiment(InteractiveExperiment):
         The data to be used as excitation signal.
 
     """
+    _data = {'in': DataCollection(), 'out': None}
     prompt = '(Laser Experiment) '
     mirror_x_chan = None
     mirror_y_chan = None
@@ -351,7 +352,6 @@ class LaserExperiment(InteractiveExperiment):
         self.volt_deg_scale = float(volt_deg_scale)
         self.x_pos = 0.0
         self.y_pos = 0.0
-        self._data = {'in': DataCollection(), 'out': None}
         if data_out is not None:
             self.data_out = np.squeeze(np.array(data_out))
             if len(self.data_out.shape) > 1:
