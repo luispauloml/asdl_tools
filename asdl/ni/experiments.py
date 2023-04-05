@@ -121,11 +121,16 @@ class InteractiveExperiment(cmd.Cmd):
                         )
                     )
             for var_name in var_names:
+                var_val = getattr(self, var_name)
+                if isinstance(var_val, np.ndarray):
+                    var_repr = f'{var_val.shape} array'
+                else:
+                    var_repr = repr(var_val)
                 docstring = getattr(self, f'set_{var_name}').__doc__
                 self.stdout.write(
                     '{0:15}  {1:15}  {2}\n'.format(
                         var_name,
-                        repr(getattr(self, var_name)),
+                        var_repr,
                         docstring if docstring else '<no documentation>',
                     )
                 )
