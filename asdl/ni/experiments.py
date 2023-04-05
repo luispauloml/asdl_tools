@@ -431,7 +431,7 @@ class LaserExperiment(InteractiveExperiment):
             attr = 'global_variables'
         else:
             raise ValueError(
-                f"expected 'local_or_global' or global one of \
+                f"expected 'local_or_global' as one of \
 {'local' | 'global'}, got '{str(local_or_global)}'"
             )
         try:
