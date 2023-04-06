@@ -462,7 +462,7 @@ class LaserExperiment(InteractiveExperiment):
                 raise AttributeError(f"variable '{var_name}' is not \
 defined in current experiment")
         if local_or_global == 'global':
-            self.data_in.__dict__.update(data)
+            self._data.__dict__.update(data)
         else:
             self.data_in[index].__dict__.update(data)
 
