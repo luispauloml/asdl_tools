@@ -33,6 +33,8 @@ class MeasuredData(object):
         file_name : str
             The name of the file where the data will be stored.  If
             `file_name` ends with ".mat", save a MATLAB binary file.
+            In case of saving a to MATLAB binary file, None values are
+            converted to an empty matrix.
         overwrite : bool, optional
             If True, overwrite an already existing file.  If False and
             target file already exists, raise `FileExistsError`.
@@ -61,9 +63,16 @@ class MeasuredData(object):
                 f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
 
         if file_name[-4:] == '.mat':
+            none_keys = []
+            for k, v in self.__dict__.items():
+                if v is None:
+                    none_keys.append(k)
+                    self.__dict__[k] = []
             scipy.io.savemat(file_name,
                              self.__dict__,
                              appendmat=False)
+            for k in none_keys:
+                self.__dict__[k] = None
         else:
             with open(file_name, 'wb') as file_:
                 pickle.dump(self, file_, protocol)
