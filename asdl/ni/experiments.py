@@ -785,12 +785,11 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
         self.point_offset = (x, y)
         self.x_pos, self.y_pos = new_x_pos, new_y_pos
 
-    def do_offset(self, _):
-        """Set current position (x, y) as offset."""
-        self.offset()
-
     def set_point_offset(self, new_value):
         """X and Y offset (cm, cm)"""
+        if new_value == '':
+            self.offset()
+            return
         try:
             x, y, *rest = eval(new_value)
         except TypeError:
