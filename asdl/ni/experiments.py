@@ -141,16 +141,12 @@ class InteractiveExperiment(cmd.Cmd):
         return 1
 
     def do_set(self, args):
-        """Set the value of a variable: set VARIABLE VALUE."""
+        """Set the value of a variable: set VARIABLE [VALUE]."""
         try:
-            var_name, new_value, *rest = args.split()
+            var_name, *rest = args.split()
         except ValueError:
-            self.badinput("try 'set VARIABLE VALUE'")
+            self.badinput("try 'set VARIABLE [VALUE]'")
             return
-        else:
-            if len(rest) > 0:
-                self.default('set ' + args)
-                return
 
         if var_name not in dir(self):
             self.badinput(f"'{var_name}' not defined")
@@ -162,7 +158,7 @@ class InteractiveExperiment(cmd.Cmd):
             self.badinput(f"'set_{var_name}' method not found")
             return
         else:
-            func(new_value)
+            func(' '.join(rest))
 
     def parsearg(self, arg, parser, raise_error=False):
         """"Parse an argument using a parser.
