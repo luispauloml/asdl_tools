@@ -47,7 +47,7 @@ class InteractiveExperiment(cmd.Cmd):
     to be defined. The method can be used to parse to convert `value`
     from `str` to any other type, i.e. a float, and call any necessary
     hooks. The docstring of this method will me presented as the
-    documentation of `<varname>` when `help variables` is called. For
+    documentation of `<varname>` when `variable` is called. For
     example:
 
         >>> class Foo(InteractiveExperiment)
@@ -59,7 +59,7 @@ class InteractiveExperiment(cmd.Cmd):
         >>> Foo().cmdloop()
         Try '?' or 'help' for help.
         (Interactive Experiment) set foo baz
-        (Interactive Experiment) help variables
+        (Interactive Experiment) variable
 
         Variables:
         ==========
@@ -101,10 +101,17 @@ class InteractiveExperiment(cmd.Cmd):
         """Run the setup."""
         return self.setup()
 
-    def help_variables(self):
-        """List all variables that can be changed."""
+    def do_variable(self, value):
+        """Show the value of variable that can be changed or a list of them:
+        variable [NAME]"""
         names = dir(self)
         var_names = [name[4:] for name in names if name.startswith('set_')]
+        if value in var_names:
+            self.stdout.write(repr(getattr(self, value)) + '\n')
+            return
+        elif value != '':
+            self.badinput(f"'{value}' not defined")
+            return
         self.stdout.write('\nVariables:\n')
         if self.ruler:
             self.stdout.write(f'{self.ruler * 10}\n')
