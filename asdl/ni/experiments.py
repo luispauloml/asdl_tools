@@ -198,6 +198,8 @@ class InteractiveExperiment(cmd.Cmd):
 
     def do_eval(self, arg):
         """Evaluate expression: eval expr"""
+        if arg == '':
+            return
         try:
             val = eval(arg)
         except:
