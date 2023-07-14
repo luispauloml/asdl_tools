@@ -9,6 +9,7 @@ Systems Laboratory.
 import os
 import pickle
 import collections
+import copy
 import scipy.io
 import time
 
@@ -76,6 +77,10 @@ class MeasuredData(object):
         else:
             with open(file_name, 'wb') as file_:
                 pickle.dump(self, file_, protocol)
+
+    def deepcopy(self):
+        """Make a deep copy of the object."""
+        return copy.deepcopy(self)
 
 
 class DataCollection(collections.UserList, MeasuredData):
