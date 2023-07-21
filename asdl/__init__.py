@@ -22,9 +22,24 @@ class MeasuredData(object):
 
     @staticmethod
     def load(file_name):
-        """Load data from a saved object."""
-        with open(file_name, 'rb') as file_:
-            obj = pickle.load(file_)
+        """Load data from a saved object.
+
+        If `file_name` ends with ".mat", try to load a MATLAB binary
+        file.
+
+        """
+        if file_name[-4:] == '.mat':
+            from scipy.io import loadmat
+            from numpy import squeeze
+
+            mat = loadmat(file_name)
+            obj = MeasuredData()
+            for k, v in mat.items():
+                v = squeeze(v)
+                obj.__dict__[k] = v[()] if v.ndim == 0 else v
+        else:
+            with open(file_name, 'rb') as file_:
+                obj = pickle.load(file_)
         return obj
 
     def save(self, file_name, overwrite=True, timestamp=True, protocol=4):
