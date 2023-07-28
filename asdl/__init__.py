@@ -14,7 +14,7 @@ import scipy.io
 import time
 
 
-__all__ = ['MeasuredData', 'DataCollection']
+__all__ = ['MeasuredData', 'DataCollection', 'load']
 
 
 class MeasuredData(object):
@@ -119,3 +119,6 @@ class DataCollection(collections.UserList, MeasuredData):
     @last.setter
     def last(self, value):
         self[-1] = value
+
+
+load = MeasuredData.load
