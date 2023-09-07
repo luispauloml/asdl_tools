@@ -93,7 +93,7 @@ class MeasuredData(object):
             with open(file_name, 'wb') as file_:
                 pickle.dump(self, file_, protocol)
 
-    def deepcopy(self):
+    def copy(self):
         """Make a deep copy of the object."""
         return copy.deepcopy(self)
 
