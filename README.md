@@ -88,7 +88,30 @@ this package:
 
   The most basic functionality of the package, which provides a
   convenient way for saving and loading data.
-  
+
+  You can create a ``MeasuredData`` object, and add attributes to it
+  to hold data.  The object can then be saved and loaded as needed:
+
+  ```
+  >>> from asdl import MeasuredData, load
+  >>> import numpy as np
+  >>> a = MeasuredData()
+  >>> a.foo = np.array([1, 2, 3])
+  >>> a.bar = np.pi
+  >>> a.save('baz.pkl')
+  >>> b = load('baz.pkl')
+  >>> b.foo
+  array([1, 2, 3])
+  >>> b.bar
+  3.141592653589793
+  >>> b.bar == np.pi
+  True
+  ```
+
+  It is also possible to save to and load from MATLAB binary files.
+  See ``help(load)`` and ``help(MeasuredData.save)`` for more
+  information.
+
 - The ``ni`` sub-package:
 
   Provides a way for dealing with read (input) and write (output)
