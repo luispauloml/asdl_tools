@@ -9,8 +9,6 @@ Systems Laboratory.
 import os
 import pickle
 import collections
-import copy
-import scipy.io
 import time
 
 
@@ -79,14 +77,14 @@ class MeasuredData(object):
                 f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
 
         if file_name[-4:] == '.mat':
+            from scipy.io import savemat
+
             none_keys = []
             for k, v in self.__dict__.items():
                 if v is None:
                     none_keys.append(k)
                     self.__dict__[k] = []
-            scipy.io.savemat(file_name,
-                             self.__dict__,
-                             appendmat=False)
+            savemat(file_name, self.__dict__, appendmat=False)
             for k in none_keys:
                 self.__dict__[k] = None
         else:
@@ -95,6 +93,8 @@ class MeasuredData(object):
 
     def copy(self):
         """Make a deep copy of the object."""
+        import copy
+
         return copy.deepcopy(self)
 
 
