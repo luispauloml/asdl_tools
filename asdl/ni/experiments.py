@@ -209,6 +209,12 @@ class InteractiveExperiment(cmd.Cmd):
         else:
             self.stdout.write(repr(val) + '\n')
 
+    def do_exec(self, arg):
+        """Execute statement: exec stmt"""
+        if arg == '':
+            return
+        return self.do_eval(f"exec('{arg}')")
+
 
 class LaserExperiment(InteractiveExperiment):
     """A class for interactive experiments using a laser.
