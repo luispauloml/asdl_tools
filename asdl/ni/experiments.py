@@ -191,7 +191,7 @@ class InteractiveExperiment(cmd.Cmd):
             if raise_error:
                 raise err
             else:
-                self.stdout.write(f'*** Error: {err.args[0]}\n')
+                self.print_error(err)
                 return
         else:
             return value
@@ -214,6 +214,25 @@ class InteractiveExperiment(cmd.Cmd):
         if arg == '':
             return
         return self.do_eval(f"exec('{arg}')")
+
+    def print_error(self, err, tb=None):
+        """Format and print an exception.
+
+        Prints a formated exception, with optional traceback.
+
+        Parameters:
+        err : Exception
+            The exception to be printed
+        tb : traceback, optional
+            Traceback of the exception.
+        """
+        s = traceback.format_exception(type(err), err, tb=tb)
+        if tb is None:
+            self.stdout.write('*** ' + s[0])
+        else:
+            s[-1] = '*** ' + s[-1]
+            for i in s:
+                self.stdout.write(i)
 
 
 class LaserExperiment(InteractiveExperiment):
@@ -585,7 +604,7 @@ defined in current experiment")
         try:
             self.mirrors_task.write_task.write(data, auto_start=True)
         except nidaqmx.errors.DaqWriteError as err:
-            self.stdout.write(f'*** Error: {err.args[0]}\n\n')
+            self.print_error(err)
 
     def set_x_pos(self, value):
         """x position of the laser point (cm)"""
@@ -698,7 +717,7 @@ Laser\t\t{self.laser_device.name}\t\t{self.laser_device.product_type}\n""")
         try:
             self.read(nsamples='all', store=True)
         except Exception as err:
-            self.stdout.write(f'*** Error: {err.args[0]}\n')
+            self.print_error(err)
 
     def postprocess(self, data):
         """Post-process the data.
