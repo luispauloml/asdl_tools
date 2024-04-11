@@ -23,10 +23,12 @@ class MeasuredData(object):
         """Load data from a saved object.
 
         If `file_name` ends with ".mat", try to load a MATLAB binary
-        file.
+        file; if it ends with ".npz", try to load a NumPy ".npz" file.
+        Otherwise, try to unpickle a `MeasuredData' object.
 
         """
-        if file_name[-4:] == '.mat':
+        _, ext = os.path.splitext(file_name)
+        if ext == '.mat':
             from scipy.io import loadmat
             from numpy import squeeze
 
@@ -35,6 +37,13 @@ class MeasuredData(object):
             for k, v in mat.items():
                 v = squeeze(v)
                 obj.__dict__[k] = v[()] if v.ndim == 0 else v
+        elif ext == '.npz':
+            from numpy import load as loadz
+
+            obj = MeasuredData()
+            with loadz(file_name, allow_pickle=True) as mat:
+                for k, v in mat.items():
+                    setattr(obj, k, v[()] if v.ndim == 0 else v)
         else:
             with open(file_name, 'rb') as file_:
                 obj = pickle.load(file_)
@@ -46,9 +55,9 @@ class MeasuredData(object):
         Parameters:
         file_name : str
             The name of the file where the data will be stored.  If
-            `file_name` ends with ".mat", save a MATLAB binary file.
-            In case of saving a to MATLAB binary file, None values are
-            converted to an empty matrix.
+            `file_name` ends with ".mat", save a MATLAB binary file;
+            if it ends with ".pkl", save a `MeasuredData` pickled object.
+            Otherwise, append extension ".npz" and save NumPy file.
         overwrite : bool, optional
             If True, overwrite an already existing file.  If False and
             target file already exists, raise `FileExistsError`.
@@ -75,8 +84,8 @@ class MeasuredData(object):
         if timestamp:
             self.timestamp = \
                 f"{time.strftime('%a, %d %b %Y %H:%M:%S %z', time.localtime())}"
-
-        if file_name[-4:] == '.mat':
+        _, ext = os.path.splitext(file_name)
+        if ext == '.mat':
             from scipy.io import savemat
 
             none_keys = []
@@ -87,9 +96,13 @@ class MeasuredData(object):
             savemat(file_name, self.__dict__, appendmat=False)
             for k in none_keys:
                 self.__dict__[k] = None
-        else:
+        elif ext == '.pkl':
             with open(file_name, 'wb') as file_:
                 pickle.dump(self, file_, protocol)
+        else:
+            from numpy import savez
+
+            savez(file_name, **self.__dict__)
 
     def copy(self):
         """Make a deep copy of the object."""
