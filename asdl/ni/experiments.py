@@ -3,6 +3,7 @@ import nidaqmx
 import numpy as np
 import traceback
 import sys
+from functools import wraps
 from . import SingleDevice, _dispatch
 from .. import MeasuredData, DataCollection
 
@@ -28,6 +29,43 @@ def sort_channels(collection, channels):
     for ch in collection:
         idx.append(collection.index(ch))
     return idx
+
+
+def basic_parser(parser):
+    """Add basic parsing to `set_` methods via decoration.
+
+    A decorator to classes derived from `InteractiveExperiment` to
+    make it easier to write `set_` methods that only do basic parsing.
+
+    It converts from:
+
+        def set_foo(self, arg):
+            arg = self.parsearg(arg, parser)
+            if arg is None:
+                return
+            self.foo = arg
+
+    to:
+
+        @basic_parser(parser)
+        def set_foo(self, arg):
+            self.foo = arg
+
+    Parameters:
+    parser :
+        A function for parsing.  It should raise a `ValueError` if
+        `arg` cannot be parsed.
+
+
+    """
+    def decorator(func):
+        @wraps(func)
+        def worker(self, arg):
+            arg = self.parsearg(arg, parser=parser)
+            if arg is not None:
+                return func(self, arg)
+        return worker
+    return decorator
 
 
 class InteractiveExperiment(cmd.Cmd):
@@ -531,30 +569,21 @@ defined in current experiment")
             self.laser_task.write(list(self.data_out), auto_start=False)
             self.laser_task.synchronize()
 
+    @basic_parser(float)
     def set_sampl_rate(self, value):
         """the sampling rate (Hz)"""
-        value = self.parsearg(value, float)
-        if value is None:
-            return
-        else:
-            self.sampl_rate = value
-            self.setup()
+        self.sampl_rate = value
+        self.setup()
 
+    @basic_parser(float)
     def set_distance(self, value):
         """the distance of the surface (cm)"""
-        value = self.parsearg(value, float)
-        if value is None:
-            return
-        else:
-            self.distance = value
+        self.distance = value
 
+    @basic_parser(float)
     def set_volt_deg_scale(self, value):
         """the scaling factor (V/deg)"""
-        value = self.parsearg(value, float)
-        if value is None:
-            return
-        else:
-            self.volt_deg_scale = value
+        self.volt_deg_scale = value
 
     def pos_to_volt_array(self, x_pos, y_pos):
         """Convert from a desired position to output voltage."""
@@ -606,21 +635,15 @@ defined in current experiment")
         except nidaqmx.errors.DaqWriteError as err:
             self.print_error(err)
 
+    @basic_parser(float)
     def set_x_pos(self, value):
         """x position of the laser point (cm)"""
-        value = self.parsearg(value, float)
-        if value is None:
-            return
-        else:
-            self.x_pos = value
+        self.x_pos = value
 
+    @basic_parser(float)
     def set_y_pos(self, value):
         """y position of the laser point (cm)"""
-        value = self.parsearg(value, float)
-        if value is None:
-            return
-        else:
-            self.y_pos = value
+        self.y_pos = value
 
     def help_system(self):
         """Show information about the system."""
