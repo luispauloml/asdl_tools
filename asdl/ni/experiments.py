@@ -185,6 +185,8 @@ class InteractiveExperiment(cmd.Cmd):
         """Exit the prompt."""
         return 1
 
+    do_e = do_q = do_quit = do_exit
+
     def do_set(self, args):
         """Set the value of a variable: set VARIABLE [VALUE]."""
         try:
