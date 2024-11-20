@@ -140,5 +140,8 @@ class DataCollection(collections.UserList, MeasuredData):
     def last(self, value):
         self[-1] = value
 
+    def copy(self) -> Self:
+        """Make a deep copy of the object."""
+        return MeasuredData.copy(self)
 
 load = MeasuredData.load
