@@ -17,7 +17,21 @@ __all__ = ['MeasuredData', 'DataCollection', 'load']
 
 
 class MeasuredData(object):
-    """Object to store, save and load data."""
+    """Object to store, save and load data.
+
+    Parameters:
+    kwargs :
+        Initialize an object with name=value pairs in the keyword
+        argument list.append For example:
+        >>> obj = MeasuredData(one=1)
+        >>> obj.one
+        1
+
+    """
+
+    def __init__(self, **kwargs) -> None:
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     @staticmethod
     def load(file_name: os.PathLike) -> 'MeasuredData':
