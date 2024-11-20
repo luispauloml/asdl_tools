@@ -10,6 +10,7 @@ import os
 import pickle
 import collections
 import time
+from typing import Self, Any
 
 
 __all__ = ['MeasuredData', 'DataCollection', 'load']
@@ -19,7 +20,7 @@ class MeasuredData(object):
     """Object to store, save and load data."""
 
     @staticmethod
-    def load(file_name):
+    def load(file_name: os.PathLike) -> 'MeasuredData':
         """Load data from a saved object.
 
         If `file_name` ends with ".mat", try to load a MATLAB binary
@@ -29,7 +30,7 @@ class MeasuredData(object):
         """
         _, ext = os.path.splitext(file_name)
         if ext == '.mat':
-            from scipy.io import loadmat
+            from scipy.io import loadmat  # type: ignore[import-untyped]
             from numpy import squeeze
 
             mat = loadmat(file_name)
@@ -49,25 +50,31 @@ class MeasuredData(object):
                 obj = pickle.load(file_)
         return obj
 
-    def save(self, file_name, overwrite=True, timestamp=True, protocol=4):
+    def save(
+        self,
+        file_name: os.PathLike,
+        overwrite: bool = True,
+        timestamp: bool = True,
+        protocol: int = 4
+    ) -> None:
         """Save data from current object to a binary file.
 
         Parameters:
-        file_name : str
+        file_name :
             The name of the file where the data will be stored.  If
             `file_name` ends with ".mat", save a MATLAB binary file;
             if it ends with ".pkl", save a `MeasuredData` pickled object.
             Otherwise, append extension ".npz" and save NumPy file.
-        overwrite : bool, optional
+        overwrite :
             If True, overwrite an already existing file.  If False and
             target file already exists, raise `FileExistsError`.
             Default is True.
-        timestamp : bool, optional
+        timestamp :
             If True, add a time stamp to the object before saving it,
             and if a time stamp already exists, overwrite it.  If
             False, do not create a time stamp, and if it already
             exists, do not modify it.  Default is True.
-        protocol :  int, optional
+        protocol :
             The protocol to be used by the pickler.  Default value is
             4, which is compatible for Python versions 3.4 onwards.
             See `pickle` module for more information
@@ -104,7 +111,7 @@ class MeasuredData(object):
 
             savez(file_name, **self.__dict__)
 
-    def copy(self):
+    def copy(self) -> Self:
         """Make a deep copy of the object."""
         import copy
 
@@ -115,7 +122,7 @@ class DataCollection(collections.UserList, MeasuredData):
     """A collection of measured data.
 
     Parameters:
-    initlist : list
+    initlist :
         A list data objects to be saved.
     """
     # `DataCollection` is a subclass of `MeasuredData` so that it can
@@ -125,7 +132,7 @@ class DataCollection(collections.UserList, MeasuredData):
     # since the only methods defined in `MeasuredData` are `save` and
     # `load`, it (probably) will not be a problem.
     @property
-    def last(self):
+    def last(self) -> Any:
         """the last object in the list"""
         return self[-1]
 
